@@ -1,0 +1,236 @@
+// Henter ugens tilbud (Netto, Føtex, 365discount, Rema 1000), Rema 1000's faste sortiment
+// og dagens benzinpriser, og skriver dem som JSON-dokumenter i ./out klar til artefaktens database.
+// Kør: node hent-data.mjs
+import { mkdir, writeFile, readFile, rm } from "node:fs/promises";
+
+const OUT = new URL("./out/", import.meta.url);
+const UA = { "User-Agent": "Mozilla/5.0 (Hverdag indkoebsliste)" };
+
+const CHAINS = [
+  { key: "netto", name: "Netto", dealer: "9ba51" },
+  { key: "foetex", name: "Føtex", dealer: "bdf5A" },
+  { key: "365", name: "365discount", dealer: "DWZE1w" },
+  { key: "rema", name: "Rema 1000", dealer: "11deC" },
+];
+
+async function getJson(url) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const res = await fetch(url, { headers: UA });
+      if (!res.ok) throw new Error(`${res.status} ${url}`);
+      return await res.json();
+    } catch (e) {
+      if (attempt >= 3) throw e;
+      await new Promise((r) => setTimeout(r, 1500 * attempt));
+    }
+  }
+}
+
+const round = (n) => Math.round(n * 100) / 100;
+const clean = (s) => (s || "").replace(/\s+/g, " ").trim();
+
+// Pris pr. kg/l/stk ud fra Tjek's mængdeangivelse.
+function unitPrice(o) {
+  const q = o.quantity || {};
+  const si = q.unit?.si;
+  const size = q.size || {};
+  const pieces = q.pieces?.from || 1;
+  const price = o.pricing?.price;
+  if (!price) return null;
+  if (si && size.from) {
+    // Mindste vægt → højeste kg-pris, som butikkens egen "Pr. kg max."
+    const amount = size.from * si.factor * pieces;
+    if (amount > 0) return [round(price / amount), si.symbol];
+  }
+  if (pieces > 1) return [round(price / pieces), "stk"];
+  return null;
+}
+
+async function fetchOffers(chain) {
+  const all = [];
+  for (let offset = 0; offset < 2000; offset += 100) {
+    const page = await getJson(
+      `https://squid-api.tjek.com/v2/offers?dealer_ids=${chain.dealer}&limit=100&offset=${offset}`
+    );
+    all.push(...page);
+    if (page.length < 100) break;
+  }
+  const now = Date.now();
+  const seen = new Set();
+  const items = [];
+  for (const o of all) {
+    if (new Date(o.run_till).getTime() < now) continue;
+    const key = o.heading + "|" + o.pricing?.price;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const up = unitPrice(o);
+    items.push([
+      clean(o.heading),
+      clean(o.description).slice(0, 110),
+      o.pricing?.price ?? null,
+      o.pricing?.pre_price ?? null,
+      up ? up[0] : null,
+      up ? up[1] : null,
+      o.run_from?.slice(0, 10) ?? null,
+      o.run_till?.slice(0, 10) ?? null,
+    ]);
+  }
+  return {
+    chain: chain.name,
+    updated: new Date().toISOString(),
+    fields: ["navn", "beskrivelse", "pris", "foerpris", "enhedspris", "enhed", "fra", "til"],
+    items,
+  };
+}
+
+// Remas egne mærkninger, forkortet: oeko, noeglehul, fuldkorn, sukker (ikke tilsat sukker), svane.
+const LABEL_MAP = { "Økologi": "oeko", "Nøglehul": "noeglehul", "Fuldkorn": "fuldkorn", "Ikke tilsat sukker": "sukker", "Svanemærket": "svane", "Rainforest Alliance": "rainforest" };
+function remaLabels(labels) {
+  const out = new Set();
+  for (const l of labels || []) if (LABEL_MAP[l?.name]) out.add(LABEL_MAP[l.name]);
+  return [...out].join(",");
+}
+
+async function fetchRemaAssortment() {
+  const items = [];
+  for (let page = 1; page < 100; page++) {
+    const j = await getJson(`https://api.digital.rema1000.dk/api/v3/products?per_page=500&page=${page}`);
+    for (const p of j.data) {
+      const pr = p.prices?.[0];
+      if (!pr?.price) continue;
+      items.push([
+        clean(p.name),
+        clean(p.underline),
+        pr.price,
+        pr.compare_unit_price ?? null,
+        pr.compare_unit ?? null,
+        pr.is_campaign || pr.is_advertised ? 1 : 0,
+        remaLabels(p.labels),
+      ]);
+    }
+    if (page >= j.meta.pagination.last_page) break;
+  }
+  // Del op i dokumenter under ~200 KB.
+  const chunks = [];
+  let cur = [];
+  let size = 0;
+  for (const it of items) {
+    const s = JSON.stringify(it).length + 1;
+    if (size + s > 190_000) {
+      chunks.push(cur);
+      cur = [];
+      size = 0;
+    }
+    cur.push(it);
+    size += s;
+  }
+  if (cur.length) chunks.push(cur);
+  return chunks.map((c, i) => ({
+    chain: "Rema 1000",
+    part: i + 1,
+    parts: chunks.length,
+    updated: new Date().toISOString(),
+    fields: ["navn", "beskrivelse", "pris", "enhedspris", "enhed", "kampagne", "maerker"],
+    items: c,
+  }));
+}
+
+const CHAIN_NAMES = { CircleK: "Circle K", Goon: "Go'on", OIL: "OIL!", UnoX: "Uno-X" };
+
+async function fetchFuel() {
+  const j = await getJson("https://www.detkoster.dk/benzin/data.json");
+  const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Copenhagen" });
+  const chains = {};
+  for (const c of j.chains || []) {
+    if (c.blyfri95) chains[CHAIN_NAMES[c.chain] || c.chain] = c.blyfri95;
+  }
+  const p = j.products?.blyfri95 || {};
+  const docs = [
+    { date: today, avg: p.avg ?? null, min: p.min ?? null, max: p.max ?? null, chains, source: "detkoster.dk", fetched: new Date().toISOString() },
+  ];
+  const history = (j.history_30d || []).filter((h) => h.blyfri95 && h.date !== today).map((h) => ({ date: h.date, avg: h.blyfri95 }));
+  // Historik (kun gennemsnit) skrives kun med --historik, så rigtige dagsdata ikke overskrives.
+  if (process.argv.includes("--historik")) for (const h of history) docs.push({ ...h, history: true });
+  return { docs, history, advice: advice([...history, { date: today, avg: docs[0].avg }], chains) };
+}
+
+// Samme logik som siden: tank når prisen er lav i forhold til de seneste dage.
+function advice(days, chains) {
+  days.sort((a, b) => a.date.localeCompare(b.date));
+  const t = days[days.length - 1];
+  if (!t?.avg) return "Ingen benzinpris i dag.";
+  const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+  const avg30 = mean(days.slice(-30).map((d) => d.avg));
+  const min7 = Math.min(...days.slice(-7).map((d) => d.avg));
+  const diff = Math.round((t.avg - avg30) * 100);
+  const cheapest = Object.entries(chains).sort((a, b) => a[1] - b[1])[0];
+  const c = cheapest ? ` Billigst: ${cheapest[0]} ${cheapest[1].toFixed(2)} kr.` : "";
+  if (t.avg <= min7 + 0.005 || diff <= -10) return `TANK I DAG: blyfri 95 ${t.avg.toFixed(2)} kr/l, ${-diff} øre under 30-dages snit.${c}`;
+  if (diff >= 15) return `DYRT I DAG: blyfri 95 ${t.avg.toFixed(2)} kr/l, ${diff} øre over snit. Vent hvis du kan.${c}`;
+  return `Normal pris: blyfri 95 ${t.avg.toFixed(2)} kr/l (${diff >= 0 ? "+" : ""}${diff} øre mod snit).${c}`;
+}
+
+await rm(OUT, { recursive: true, force: true });
+await mkdir(new URL("offers/", OUT), { recursive: true });
+await mkdir(new URL("sortiment/", OUT), { recursive: true });
+await mkdir(new URL("fuel/", OUT), { recursive: true });
+
+const summary = { offers: {}, sortiment: 0, fuel: [], advice: null };
+const only = process.argv.find((a) => a === "fuel" || a === "offers"); // valgfrit
+
+const site = { offers: [], sortiment: [], fuel: null };
+
+if (only !== "fuel") {
+  for (const c of CHAINS) {
+    const doc = await fetchOffers(c);
+    await writeFile(new URL(`offers/${c.key}.json`, OUT), JSON.stringify(doc));
+    summary.offers[c.key] = doc.items.length;
+    site.offers.push({ ...doc, _id: c.key });
+  }
+  const parts = await fetchRemaAssortment();
+  for (const d of parts) await writeFile(new URL(`sortiment/rema-${d.part}.json`, OUT), JSON.stringify(d));
+  summary.sortiment = parts.length;
+  site.sortiment = parts;
+}
+if (only !== "offers") {
+  const fuel = await fetchFuel();
+  summary.advice = fuel.advice;
+  site.fuel = fuel;
+  for (const d of fuel.docs) {
+    await writeFile(new URL(`fuel/${d.date}.json`, OUT), JSON.stringify(d));
+    summary.fuel.push(d.date);
+  }
+}
+
+// --site: skriv data og index.html til ./site til GitHub Pages.
+if (process.argv.includes("--site")) {
+  const SITE = new URL("./site/", import.meta.url);
+  const DATA = new URL("data/", SITE);
+  await mkdir(DATA, { recursive: true });
+  if (site.offers.length) await writeFile(new URL("offers.json", DATA), JSON.stringify({ docs: site.offers }));
+  if (site.sortiment.length) await writeFile(new URL("sortiment.json", DATA), JSON.stringify({ docs: site.sortiment }));
+  if (site.fuel) {
+    // Benzinhistorikken bor i repoet: flet dagens tal ind, og udfyld manglende dage fra kildens 30-dages historik.
+    let days = [];
+    try { days = JSON.parse(await readFile(new URL("fuel.json", DATA), "utf8")).days || []; } catch {}
+    const byDate = new Map(days.map((d) => [d.date, d]));
+    for (const d of site.fuel.docs) byDate.set(d.date, d);
+    for (const h of site.fuel.history) if (!byDate.has(h.date)) byDate.set(h.date, { ...h, history: true });
+    days = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+    await writeFile(new URL("fuel.json", DATA), JSON.stringify({ days }));
+  }
+  const page = await readFile(new URL("./hverdag.html", import.meta.url), "utf8");
+  const head = `<!doctype html><html lang="da"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Hverdag">
+<meta name="theme-color" content="#0f6b4f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head><body>`;
+  await writeFile(new URL("index.html", SITE), head + page + "\n</body></html>\n");
+}
+console.log(JSON.stringify(summary));

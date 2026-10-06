@@ -1,0 +1,806 @@
+<!doctype html><html lang="da"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Hverdag">
+<meta name="theme-color" content="#0f6b4f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head><body><title>Hverdag</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: én smal kolonne (telefon først) med faneblade i toppen; priser sat som hyldeforkant-skilte. */
+:root {
+  --bg: #eef1ef;
+  --surface: #ffffff;
+  --surface-2: #e3e8e5;
+  --fg: #17201c;
+  --muted: #5b6863;
+  --line: #d3dad6;
+  --accent: #0f6b4f;
+  --accent-fg: #ffffff;
+  --tag: #ffd84a;
+  --tag-fg: #1a1a12;
+  --good: #1d7a3e;
+  --warn: #a35f00;
+  --bad: #b42318;
+  --good-bg: #dff3e5;
+  --warn-bg: #fdeccd;
+  --bad-bg: #fbe1de;
+  --c-netto: #f2c500;
+  --c-foetex: #1c3f8f;
+  --c-365: #2d2d2d;
+  --c-rema: #1f5fbf;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111614; --surface: #1a211e; --surface-2: #242d29; --fg: #e7ece9; --muted: #95a39d;
+    --line: #2f3a35; --accent: #4cc39a; --accent-fg: #0b1511; --tag: #ffd84a; --tag-fg: #1a1a12;
+    --good: #5fd68a; --warn: #f0b052; --bad: #ff8a7a; --good-bg: #173524; --warn-bg: #3a2c13; --bad-bg: #3d1d1a;
+    --c-netto: #f2c500; --c-foetex: #6f93e8; --c-365: #bdbdbd; --c-rema: #5c9bff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111614; --surface: #1a211e; --surface-2: #242d29; --fg: #e7ece9; --muted: #95a39d;
+  --line: #2f3a35; --accent: #4cc39a; --accent-fg: #0b1511; --tag: #ffd84a; --tag-fg: #1a1a12;
+  --good: #5fd68a; --warn: #f0b052; --bad: #ff8a7a; --good-bg: #173524; --warn-bg: #3a2c13; --bad-bg: #3d1d1a;
+  --c-netto: #f2c500; --c-foetex: #6f93e8; --c-365: #bdbdbd; --c-rema: #5c9bff;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 760px; margin: 0 auto; padding-inline: 16px; padding-block: 0 48px; }
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 14px 0; }
+.brand { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.brand h1 { font-family: var(--font-display); font-weight: 700; font-size: 30px; letter-spacing: .01em; margin: 0; }
+.brand .wk { font-family: var(--font-display); font-weight: 600; color: var(--muted); font-size: 18px; text-transform: uppercase; letter-spacing: .06em; }
+nav.tabs { display: flex; gap: 4px; margin-top: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs button { flex: 1; appearance: none; border: 0; background: none; color: var(--muted); font: 600 15px var(--font-body); padding: 10px 8px 12px; border-bottom: 3px solid transparent; cursor: pointer; display: flex; gap: 6px; justify-content: center; align-items: center; }
+nav.tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+nav.tabs .count { background: var(--accent); color: var(--accent-fg); border-radius: 99px; font-size: 12px; padding: 0 7px; min-width: 20px; }
+button:focus-visible, input:focus-visible, a:focus-visible, label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+section.view { display: grid; gap: 16px; padding-top: 16px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 22px; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--font-display); font-weight: 600; font-size: 15px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0; }
+
+/* Søgning */
+.search { display: flex; gap: 8px; }
+.search input { flex: 1; min-width: 0; font: 500 17px var(--font-body); padding: 12px 14px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
+.btn { appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 600 14px var(--font-body); padding: 10px 14px; border-radius: var(--r); cursor: pointer; white-space: nowrap; }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.btn:disabled { opacity: .5; cursor: default; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 500 13px var(--font-body); border-radius: 99px; padding: 5px 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+.filters { display: grid; gap: 8px; }
+.sortrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.suggest { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Resultater */
+.results { display: grid; gap: 8px; }
+.item { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; }
+.item .name { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.item .desc { grid-column: 1; font-size: 13px; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+.item .meta { grid-column: 1; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 12px; color: var(--muted); }
+.item .side { grid-column: 2; grid-row: 1 / span 3; display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.tag { background: var(--tag); color: var(--tag-fg); font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1; padding: 6px 9px 5px; border-radius: 3px; font-variant-numeric: tabular-nums; text-align: right; box-shadow: inset 0 -3px 0 rgba(0,0,0,.12); }
+.tag small { display: block; font-family: var(--font-body); font-weight: 600; font-size: 11px; margin-top: 3px; }
+.tag.plain { background: var(--surface-2); color: var(--fg); box-shadow: none; }
+.store { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; color: var(--fg); }
+.pill { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; border-radius: 4px; padding: 2px 6px; }
+.pill.best { background: var(--good-bg); color: var(--good); }
+.pill.save { background: var(--bad-bg); color: var(--bad); }
+.pill.q { background: var(--good-bg); color: var(--good); text-transform: none; letter-spacing: 0; }
+.qrow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.qrow .lbl { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-right: 2px; }
+.chip.qc[aria-pressed="true"] { background: var(--good); color: var(--bg); border-color: var(--good); }
+.pill.fixed { background: var(--surface-2); color: var(--muted); }
+.add { appearance: none; border: 0; background: var(--accent); color: var(--accent-fg); width: 38px; height: 38px; border-radius: 50%; font-size: 22px; font-weight: 600; cursor: pointer; line-height: 1; }
+.add.done { background: var(--good-bg); color: var(--good); font-size: 16px; }
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--r); padding: 20px; text-align: center; color: var(--muted); }
+.more { justify-self: center; }
+
+/* Indkøbsseddel */
+.listhead { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.addfree { display: flex; gap: 8px; }
+.addfree input { flex: 1; min-width: 0; font: 500 15px var(--font-body); padding: 10px 12px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
+.storegroup { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.storegroup > .gh { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--line); gap: 8px; }
+.storegroup > .gh .t { font-family: var(--font-display); font-weight: 700; font-size: 20px; display: flex; align-items: center; gap: 8px; }
+.storegroup > .gh .sum { font-family: var(--font-display); font-weight: 600; font-size: 17px; font-variant-numeric: tabular-nums; }
+.cat { padding: 8px 12px 2px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
+.row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+.row + .row { border-top: 1px solid var(--line); }
+.row input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--accent); flex: none; }
+.row .txt { flex: 1; min-width: 0; }
+.row .txt .n { font-weight: 600; overflow-wrap: anywhere; }
+.row .txt .d { font-size: 12px; color: var(--muted); }
+.row.checked .txt { opacity: .5; text-decoration: line-through; }
+.row .pr { font-family: var(--font-display); font-weight: 600; font-size: 18px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.qty { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; }
+.qty button { appearance: none; border: 0; background: none; color: var(--fg); width: 26px; height: 26px; cursor: pointer; font-size: 16px; }
+.qty span { min-width: 18px; text-align: center; font-variant-numeric: tabular-nums; font-size: 13px; }
+.del { appearance: none; border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 18px; padding: 4px; }
+.export { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 10px; }
+.export ol { margin: 0; padding-left: 20px; color: var(--muted); font-size: 13px; }
+.export textarea { width: 100%; min-height: 140px; font: 13px/1.4 ui-monospace, Consolas, monospace; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; resize: vertical; }
+.grand { display: flex; justify-content: space-between; font-family: var(--font-display); font-size: 20px; font-weight: 700; padding: 0 2px; font-variant-numeric: tabular-nums; }
+
+/* Benzin */
+.verdict { border-radius: var(--r); padding: 16px; display: grid; gap: 6px; border: 1px solid var(--line); }
+.verdict.good { background: var(--good-bg); border-color: transparent; }
+.verdict.warn { background: var(--warn-bg); border-color: transparent; }
+.verdict.bad { background: var(--bad-bg); border-color: transparent; }
+.verdict .k { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.verdict.good .k { color: var(--good); } .verdict.warn .k { color: var(--warn); } .verdict.bad .k { color: var(--bad); }
+.verdict .h { font-family: var(--font-display); font-weight: 700; font-size: 30px; line-height: 1.05; text-wrap: balance; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; }
+.stat .v { font-family: var(--font-display); font-weight: 700; font-size: 26px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stat .l { font-size: 12px; color: var(--muted); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.chart { width: 100%; overflow-x: auto; }
+.chart svg { display: block; width: 100%; height: auto; }
+.chart text { fill: var(--muted); font: 11px var(--font-body); }
+.bars { display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: 84px 1fr 64px; align-items: center; gap: 8px; font-size: 14px; }
+.bar .track { height: 12px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.bar .fill { height: 100%; background: var(--accent); border-radius: 3px; }
+.bar.min .fill { background: var(--good); }
+.bar .v { font-variant-numeric: tabular-nums; text-align: right; font-weight: 600; }
+.foot { font-size: 12px; color: var(--muted); }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 99px; font-weight: 600; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
+@media (max-width: 480px) {
+  .stats { grid-template-columns: 1fr 1fr; }
+  .stats .stat:last-child { grid-column: span 2; }
+  .verdict .h { font-size: 26px; }
+}
+@media (prefers-reduced-motion: no-preference) { .add, .chip, .btn { transition: background .15s, color .15s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><h1>Hverdag</h1><span class="wk" id="wk"></span></div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" id="tab-sog" aria-selected="true" data-view="sog">Find varer</button>
+      <button role="tab" id="tab-liste" aria-selected="false" data-view="liste">Indkøbsseddel <span class="count" id="listcount" hidden>0</span></button>
+      <button role="tab" id="tab-benzin" aria-selected="false" data-view="benzin">Benzin 95</button>
+    </nav>
+  </header>
+
+  <!-- SØG -->
+  <section class="view" id="view-sog">
+    <form class="search" id="searchform">
+      <input id="q" type="search" placeholder="Søg fx hakket oksekød, kylling, kaffe" autocomplete="off" enterkeyhint="search" aria-label="Søg efter vare">
+      <button class="btn primary" type="submit">Søg</button>
+    </form>
+    <div class="filters">
+      <div class="chips" id="chainchips" aria-label="Butikker"></div>
+      <div class="qrow" id="qualchips"><span class="lbl">Kvalitet</span></div>
+      <div class="sortrow">
+        <div class="chips">
+          <button class="chip" id="sort-unit" aria-pressed="true">Billigst pr. kg/l</button>
+          <button class="chip" id="sort-price" aria-pressed="false">Laveste pris</button>
+        </div>
+        <button class="chip" id="incl-fixed" aria-pressed="true" title="Medtag Rema 1000's faste sortiment">+ Remas faste priser</button>
+      </div>
+    </div>
+    <div class="small muted"><span id="status">Henter ugens tilbud…</span> <span id="upd"></span></div>
+    <div class="results" id="results"></div>
+  </section>
+
+  <!-- LISTE -->
+  <section class="view" id="view-liste" hidden>
+    <div class="listhead">
+      <h2>Indkøbsseddel</h2>
+      <div class="chips">
+        <button class="chip" id="clear-checked">Fjern afkrydsede</button>
+        <button class="chip" id="clear-all">Ryd seddel</button>
+      </div>
+    </div>
+    <div id="confirm-clear" class="empty" hidden>
+      <div>Slet alle varer på sedlen?</div>
+      <div class="chips" style="justify-content:center;margin-top:10px">
+        <button class="btn" id="clear-no">Behold</button>
+        <button class="btn primary" id="clear-yes">Slet alle</button>
+      </div>
+    </div>
+    <form class="addfree" id="freeform">
+      <input id="freetext" placeholder="Tilføj egen vare, fx mælk" autocomplete="off" aria-label="Egen vare">
+      <button class="btn" type="submit">Tilføj</button>
+    </form>
+    <div id="listbody" class="results"></div>
+    <div class="grand" id="grand" hidden><span>I alt</span><span id="grandsum"></span></div>
+    <div class="export" id="exportbox">
+      <div class="listhead"><h2>Til iPhone Noter</h2><div class="chips"><button class="btn primary" id="share" hidden>Del til Noter</button><button class="btn" id="copy">Kopiér seddel</button></div></div>
+      <div class="small muted" id="copytip"></div>
+      <ol>
+        <li>Tryk <b>Kopiér seddel</b>.</li>
+        <li>Åbn Noter, lav en ny note og sæt ind.</li>
+        <li>Markér varelinjerne og tryk på tjekliste-knappen, så du kan krydse af i butikken.</li>
+      </ol>
+      <textarea id="exporttext" readonly aria-label="Seddel som tekst"></textarea>
+    </div>
+  </section>
+
+  <!-- BENZIN -->
+  <section class="view" id="view-benzin" hidden>
+    <div class="verdict" id="verdict"><div class="k">Benzin 95</div><div class="h">Henter priser…</div></div>
+    <div class="stats" id="fuelstats"></div>
+    <div class="panel">
+      <h3>Dagens pumpepris pr. kæde</h3>
+      <div class="bars" id="chainbars"></div>
+    </div>
+    <div class="panel">
+      <h3>Gennemsnit, seneste dage (kr/l)</h3>
+      <div class="chart" id="trend"></div>
+    </div>
+    <div class="panel">
+      <h3>Typisk ugedag (øre fra ugens gennemsnit)</h3>
+      <div class="chart" id="weekday"></div>
+      <div class="foot" id="weekdaynote"></div>
+    </div>
+    <div class="foot" id="fuelsource"></div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const CHAINS = [
+  { key: "netto", name: "Netto", color: "var(--c-netto)" },
+  { key: "foetex", name: "Føtex", color: "var(--c-foetex)" },
+  { key: "365", name: "365discount", color: "var(--c-365)" },
+  { key: "rema", name: "Rema 1000", color: "var(--c-rema)" },
+];
+const CHAIN_BY_NAME = Object.fromEntries(CHAINS.map(c => [c.name, c]));
+const STORE_ORDER = [...CHAINS.map(c => c.name), "Valgfri butik"];
+
+// Typisk rækkefølge gennem butikken.
+const CATS = [
+  ["Frugt & grønt"], ["Brød & bageri"], ["Kød & fjerkræ"], ["Fisk"], ["Pålæg"], ["Mejeri & æg"], ["Ost"],
+  ["Kolonial"], ["Drikkevarer"], ["Slik & snacks"], ["Frost"], ["Husholdning"], ["Personlig pleje"], ["Øvrigt"],
+].map(x => x[0]);
+// Regler testes i denne rækkefølge; "^" = skal stå i starten af et ord.
+const RULES = [
+  ["Brød & bageri", ["smørrebrød"]],
+  ["Slik & snacks", ["chips", "slik", "chokolade", "vingummi", "lakrids", "kiks", "småkage", "popcorn", "nødder", "mandler", "snack", "marabou", "haribo", "toms"]],
+  ["Frost", ["frost", "frossen", "frosne", "^is ", "^is,", "isbæger", "isvaffel", "pommes", "pizza"]],
+  ["Husholdning", ["opvask", "vaskemiddel", "skyllemiddel", "toiletpapir", "køkkenrulle", "skraldepose", "affaldspose", "rengøring", "sølvpapir", "bagepapir", "fryseposer", "stearinlys", "batteri", "kattegrus", "hundefoder", "kattemad"]],
+  ["Personlig pleje", ["shampoo", "balsam", "tandpasta", "tandbørste", "deodorant", "^sæbe", "håndsæbe", "bleer", "barber", "bodylotion", "creme ", "vatpinde", "bind", "tampon"]],
+  ["Pålæg", ["pålæg", "leverpostej", "spegepølse", "salami", "rullepølse", "hamburgerryg", "kyllingebryst i skiver", "skinke i skiver", "postej"]],
+  ["Drikkevarer", ["sodavand", "cola", "fanta", "sprite", "pepsi", "juice", "^saft", "^øl", "pilsner", "vin ", "^vin", "rødvin", "hvidvin", "rosé", "^vand", "kildevand", "danskvand", "energidrik", "faxe", "tuborg", "carlsberg", "cider", "smoothie", "iste"]],
+  ["Ost", ["^ost", "skiveost", "flødeost", "mozzarella", "parmesan", "cheddar", "^feta", "danbo", "brie", "camembert", "hytteost", "riberhus", "castello", "arla unika"]],
+  ["Mejeri & æg", ["mælk", "yoghurt", "skyr", "^smør", "kærgården", "lurpak", "fløde", "creme fraiche", "cremefraiche", "^æg", "frilandsæg", "skrabeæg", "ymer", "a38", "kærnemælk", "koldskål", "havredrik", "smørbar"]],
+  ["Fisk", ["laks", "torsk", "rejer", "^tun", "tunfisk", "^sild", "makrel", "fisk", "rødspætte", "^sej", "fiskefilet", "kuller", "muslinger", "sushi"]],
+  ["Kød & fjerkræ", ["oksekød", "okse", "svinekød", "^svin", "kylling", "kalkun", "flæsk", "bacon", "pølse", "hakket", "^bøf", "steak", "kotelet", "mørbrad", "culotte", "entrecote", "^and", "andebryst", "^lam", "frikadelle", "medister", "ribben", "nakke", "kød", "spareribs", "schnitzel", "tenderloin", "kebab", "skinke"]],
+  ["Brød & bageri", ["brød", "^bolle", "boller", "toast", "croissant", "^kage", "kager", "wienerbrød", "flute", "baguette", "pita", "tortilla", "knækbrød", "rundstykke", "kringle", "kanelsnegl", "muffin"]],
+  ["Frugt & grønt", ["æble", "^pære", "banan", "appelsin", "citron", "lime", "mandarin", "klementin", "drue", "melon", "jordbær", "hindbær", "blåbær", "avocado", "kiwi", "ananas", "mango", "tomat", "agurk", "salat", "peberfrugt", "^løg", "rødløg", "kartof", "gulerød", "gulerod", "broccoli", "blomkål", "^kål", "hvidkål", "rødkål", "squash", "champignon", "svampe", "porre", "spinat", "ingefær", "hvidløg", "frugt", "grønt", "^bær", "græskar", "rødbede", "selleri", "asparges", "majs", "bønner, friske"]],
+  ["Kolonial", ["pasta", "spaghetti", "^ris", "basmati", "^mel", "hvedemel", "sukker", "kaffe", "^te ", "^te,", "havregryn", "müsli", "musli", "cornflakes", "morgenmad", "ketchup", "mayonnaise", "remoulade", "sennep", "^olie", "olivenolie", "krydderi", "dåse", "konserves", "bønner", "flåede", "sauce", "bouillon", "nudler", "honning", "marmelade", "syltetøj", "nutella", "kakao", "bagepulver", "gær", "eddike", "^salt", "peber"]],
+];
+const norm = s => (s || "").toLowerCase().replace(/\s+/g, " ");
+
+// Kvalitetsfiltre. Tilbud genkendes på teksten; Remas faste varer også på Remas egne mærker.
+const WB = "(^|[^a-zæøå])";
+const QUALITY = [
+  { key: "oeko", name: "Økologisk", short: "Øko", re: new RegExp("økolog|" + WB + "øko([^a-zæøå]|$)|änglamark|" + WB + "øgo([^a-zæøå]|$)|organic|ø-mærke"), labels: ["oeko"] },
+  { key: "dansk", name: "Dansk", short: "Dansk", re: new RegExp(WB + "dansk|" + WB + "danske|fra danmark") },
+  { key: "dyr", name: "Dyrevelfærd", short: "Dyrevelfærd", re: /friland|fritgående|dyrevelfærd|græsfodre|græsgående|free range|dyrenes beskyttelse/ },
+  { key: "fisk", name: "MSC/ASC-fisk", short: "MSC/ASC", re: /(^|[^a-z])(msc|asc)([^a-z]|$)/ },
+  { key: "sund", name: "Nøglehul/fuldkorn", short: "Nøglehul", re: /nøglehul|fuldkorn|uden tilsat sukker|ikke tilsat sukker/, labels: ["noeglehul", "fuldkorn", "sukker"] },
+];
+function qualityFlags(text, labels) {
+  const t = norm(text), ls = (labels || "").split(",");
+  return QUALITY.filter(q => q.re.test(t) || (q.labels || []).some(l => ls.includes(l))).map(q => q.key);
+}
+function categorize(name, desc) {
+  const c = classify(name);
+  return c === "Øvrigt" && desc ? classify(name + " " + desc) : c;
+}
+function classify(text) {
+  const t = " " + norm(text) + " ";
+  for (const [cat, keys] of RULES) {
+    for (const k of keys) {
+      if (k.startsWith("^")) { if (new RegExp("[^a-zæøå0-9]" + k.slice(1).replace(/[.*+?()[\]\\]/g, "\\$&")).test(t)) return cat; }
+      else if (t.includes(k)) return cat;
+    }
+  }
+  return "Øvrigt";
+}
+
+const kr = n => n == null ? "" : n.toLocaleString("da-DK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
+const kr2 = n => n == null ? "–" : n.toLocaleString("da-DK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const unitLabel = u => ({ kg: "kg", l: "l", stk: "stk", pcs: "stk", m: "m" }[u] || u || "");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const dateDa = iso => iso ? new Date(iso + "T12:00:00").toLocaleDateString("da-DK", { weekday: "short", day: "numeric", month: "short" }) : "";
+function isoWeek(d = new Date()) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
+  const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  return Math.ceil(((t - y0) / 864e5 + 1) / 7);
+}
+document.getElementById("wk").textContent = "Uge " + isoWeek();
+
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 2200);
+}
+
+/* ---------- State ---------- */
+const state = {
+  products: [],          // samlet søgeindeks
+  updated: null,
+  list: [],              // indkøbsseddel fra db
+  chains: new Set(CHAINS.map(c => c.key)),
+  quality: new Set(),
+  sort: "unit",
+  inclFixed: true,
+  query: "",
+  shown: 40,
+  db: null,
+  fuel: [],
+};
+try { const s = JSON.parse(localStorage.getItem("hverdag-prefs") || "{}");
+  if (s.chains) state.chains = new Set(s.chains); if (s.sort) state.sort = s.sort; if (s.inclFixed != null) state.inclFixed = s.inclFixed; if (s.quality) state.quality = new Set(s.quality); } catch {}
+function savePrefs() { try { localStorage.setItem("hverdag-prefs", JSON.stringify({ chains: [...state.chains], sort: state.sort, inclFixed: state.inclFixed, quality: [...state.quality] })); } catch {} }
+
+/* ---------- Faneblade ---------- */
+function showView(v) {
+  for (const b of document.querySelectorAll("nav.tabs button")) b.setAttribute("aria-selected", String(b.dataset.view === v));
+  for (const s of document.querySelectorAll("section.view")) s.hidden = s.id !== "view-" + v;
+  try { localStorage.setItem("hverdag-tab", v); } catch {}
+}
+document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => showView(b.dataset.view)));
+const startTab = (location.hash || "").slice(1) || (() => { try { return localStorage.getItem("hverdag-tab"); } catch { return null; } })();
+if (["sog", "liste", "benzin"].includes(startTab)) showView(startTab);
+
+/* ---------- Filtre ---------- */
+const chipBox = document.getElementById("chainchips");
+for (const c of CHAINS) {
+  const b = document.createElement("button");
+  b.className = "chip"; b.dataset.key = c.key;
+  b.innerHTML = `<span class="dot" style="background:${c.color}"></span>${esc(c.name)}`;
+  b.addEventListener("click", () => {
+    if (state.chains.has(c.key) && state.chains.size > 1) state.chains.delete(c.key); else state.chains.add(c.key);
+    savePrefs(); syncChips(); renderResults();
+  });
+  chipBox.appendChild(b);
+}
+const qualBox = document.getElementById("qualchips");
+for (const q of QUALITY) {
+  const b = document.createElement("button");
+  b.className = "chip qc"; b.dataset.key = q.key; b.textContent = q.name;
+  b.addEventListener("click", () => {
+    if (state.quality.has(q.key)) state.quality.delete(q.key); else state.quality.add(q.key);
+    state.shown = 40; savePrefs(); syncChips(); renderResults();
+  });
+  qualBox.appendChild(b);
+}
+function syncChips() {
+  for (const b of qualBox.querySelectorAll("button")) b.setAttribute("aria-pressed", String(state.quality.has(b.dataset.key)));
+  for (const b of chipBox.children) b.setAttribute("aria-pressed", String(state.chains.has(b.dataset.key)));
+  document.getElementById("sort-unit").setAttribute("aria-pressed", String(state.sort === "unit"));
+  document.getElementById("sort-price").setAttribute("aria-pressed", String(state.sort === "price"));
+  document.getElementById("incl-fixed").setAttribute("aria-pressed", String(state.inclFixed));
+}
+syncChips();
+document.getElementById("sort-unit").onclick = () => { state.sort = "unit"; savePrefs(); syncChips(); renderResults(); };
+document.getElementById("sort-price").onclick = () => { state.sort = "price"; savePrefs(); syncChips(); renderResults(); };
+document.getElementById("incl-fixed").onclick = () => { state.inclFixed = !state.inclFixed; savePrefs(); syncChips(); renderResults(); };
+document.getElementById("searchform").addEventListener("submit", e => { e.preventDefault(); document.getElementById("q").blur(); });
+let qTimer;
+document.getElementById("q").addEventListener("input", e => {
+  clearTimeout(qTimer); qTimer = setTimeout(() => { state.query = e.target.value; state.shown = 40; renderResults(); }, 150);
+});
+
+/* ---------- Søgning ---------- */
+function buildIndex(offerDocs, fixedDocs) {
+  const out = [];
+  for (const d of offerDocs) {
+    const chain = CHAINS.find(c => c.name === d.chain || c.key === d._id);
+    if (!chain) continue;
+    for (const [name, desc, price, pre, up, unit, from, till] of d.items || []) {
+      out.push({ id: chain.key + ":o:" + name + ":" + price, chain: chain.name, ck: chain.key, name, desc, price, pre, up, unit, from, till, offer: true,
+        hay: norm(name + " " + desc), cat: categorize(name, desc), q: qualityFlags(name + " " + desc) });
+    }
+  }
+  for (const d of fixedDocs) {
+    for (const [name, desc, price, up, unit, camp, labels] of d.items || []) {
+      const nm = name.charAt(0) + name.slice(1).toLowerCase();
+      out.push({ id: "rema:f:" + name + ":" + desc, chain: "Rema 1000", ck: "rema", name: nm, desc, price, pre: null, up, unit: (unit || "").toLowerCase(), offer: false, campaign: !!camp,
+        hay: norm(name + " " + desc), cat: categorize(name, desc), q: qualityFlags(name + " " + desc, labels) });
+    }
+  }
+  return out;
+}
+
+function search() {
+  const words = norm(state.query).trim().split(" ").filter(Boolean);
+  let res = state.products.filter(p => state.chains.has(p.ck) && (p.offer || state.inclFixed));
+  if (state.quality.size) res = res.filter(p => [...state.quality].every(k => p.q.includes(k)));
+  if (words.length) res = res.filter(p => words.every(w => p.hay.includes(w)));
+  else if (!state.quality.size) res = res.filter(p => p.offer);
+  const key = state.sort === "unit" ? (p => p.up ?? Infinity) : (p => p.price ?? Infinity);
+  if (words.length) res.sort((a, b) => key(a) - key(b) || (a.price - b.price));
+  // Uden søgeord: tilbud først, derefter i butikkens rækkefølge.
+  else res.sort((a, b) => (b.offer - a.offer) || CATS.indexOf(a.cat) - CATS.indexOf(b.cat) || key(a) - key(b));
+  return res;
+}
+
+function renderResults() {
+  const box = document.getElementById("results");
+  const status = document.getElementById("status");
+  if (!state.products.length) return;
+  const res = search();
+  const words = norm(state.query).trim();
+  // Billigst pr. enhed blandt resultaterne, pr. enhedstype.
+  const best = {};
+  for (const p of res) if (p.up != null) { const u = p.unit; if (best[u] == null || p.up < best[u]) best[u] = p.up; }
+  const inList = new Set(state.list.map(i => i.pid));
+  status.textContent = words
+    ? `${res.length} varer matcher "${state.query.trim()}"` + (res.length ? (state.sort === "unit" ? ", billigst pr. kg/l først" : ", laveste pris først") : "")
+    : state.quality.size ? `${res.length} varer: ${QUALITY.filter(q => state.quality.has(q.key)).map(q => q.name.toLowerCase()).join(" + ")}. Skriv for at søge.`
+    : `Ugens tilbud: ${res.length} varer. Skriv for at søge.`;
+  if (!res.length) {
+    box.innerHTML = `<div class="empty">Ingen varer matcher. Prøv et kortere ord, fx "kylling" i stedet for "kyllingebryst"${state.quality.size ? ", eller slå et kvalitetsfilter fra" : ""}.</div>`;
+    return;
+  }
+  const html = res.slice(0, state.shown).map(p => {
+    const ch = CHAIN_BY_NAME[p.chain];
+    const save = p.pre && p.pre > p.price ? `<span class="pill save">Spar ${kr(Math.round((p.pre - p.price) * 100) / 100)} kr</span>` : "";
+    const isBest = p.up != null && words && best[p.unit] === p.up ? `<span class="pill best">Billigst pr. ${unitLabel(p.unit)}</span>` : "";
+    const qb = p.q.map(k => `<span class="pill q">${QUALITY.find(q => q.key === k).short}</span>`).join("");
+    const fixed = p.offer ? "" : `<span class="pill fixed">${p.campaign ? "Kampagne" : "Fast pris"}</span>`;
+    const till = p.offer && p.till ? `<span>t.o.m. ${esc(dateDa(p.till))}</span>` : "";
+    const done = inList.has(p.id);
+    return `<article class="item">
+      <div class="name">${esc(p.name)}</div>
+      <div class="desc">${esc(p.desc)}</div>
+      <div class="meta"><span class="store"><span class="dot" style="background:${ch.color}"></span>${esc(p.chain)}</span>${till}${isBest}${save}${qb}${fixed}</div>
+      <div class="side">
+        <div class="tag${p.offer ? "" : " plain"}">${kr(p.price)}${p.up != null ? `<small>${kr2(p.up)} kr/${esc(unitLabel(p.unit))}</small>` : ""}</div>
+        <button class="add${done ? " done" : ""}" data-pid="${esc(p.id)}" aria-label="${done ? "På sedlen" : "Tilføj " + esc(p.name) + " til indkøbsseddel"}">${done ? "✓" : "+"}</button>
+      </div>
+    </article>`;
+  }).join("");
+  box.innerHTML = html + (res.length > state.shown ? `<button class="btn more" id="showmore">Vis flere (${res.length - state.shown})</button>` : "");
+  const more = document.getElementById("showmore");
+  if (more) more.onclick = () => { state.shown += 40; renderResults(); };
+}
+document.getElementById("results").addEventListener("click", e => {
+  const b = e.target.closest(".add"); if (!b) return;
+  const p = state.products.find(x => x.id === b.dataset.pid); if (!p) return;
+  const existing = state.list.find(i => i.pid === p.id);
+  if (existing) { showView("liste"); return; }
+  addToList({ pid: p.id, name: p.name, desc: p.desc, chain: p.chain, price: p.price, up: p.up, unit: p.unit, till: p.till || null, offer: p.offer, cat: p.cat, q: p.q });
+});
+
+/* ---------- Indkøbsseddel (db) ---------- */
+const localList = { load() { try { return JSON.parse(localStorage.getItem("hverdag-liste") || "[]"); } catch { return []; } },
+  save(l) { try { localStorage.setItem("hverdag-liste", JSON.stringify(l)); } catch {} } };
+
+async function addToList(item) {
+  const doc = { ...item, qty: 1, checked: false, added: new Date().toISOString() };
+  if (state.db) {
+    try { await state.db.collection("liste").add(doc); toast("Tilføjet: " + item.name); }
+    catch (e) { toast(e?.code === "quota_exceeded" ? "Sedlen er fuld. Ryd afkrydsede varer først." : "Kunne ikke gemme. Prøv igen."); }
+  } else {
+    state.list.push({ ...doc, _id: "l" + Date.now() }); localList.save(state.list); renderList(); renderResults(); toast("Tilføjet: " + item.name);
+  }
+}
+async function patchItem(id, patch) {
+  if (state.db) { try { await state.db.collection("liste").doc(id).update(patch); } catch { toast("Kunne ikke gemme ændringen."); } }
+  else { const it = state.list.find(i => i._id === id); Object.assign(it, patch); localList.save(state.list); renderList(); }
+}
+async function removeItems(ids) {
+  if (state.db) { for (const id of ids) { try { await state.db.collection("liste").doc(id).delete(); } catch {} } }
+  else { state.list = state.list.filter(i => !ids.includes(i._id)); localList.save(state.list); renderList(); renderResults(); }
+}
+
+function groupList() {
+  const groups = {};
+  for (const it of state.list) {
+    const store = CHAIN_BY_NAME[it.chain] ? it.chain : "Valgfri butik";
+    (groups[store] ||= []).push(it);
+  }
+  return STORE_ORDER.filter(s => groups[s]).map(s => {
+    const items = groups[s].sort((a, b) => CATS.indexOf(a.cat) - CATS.indexOf(b.cat) || a.name.localeCompare(b.name, "da"));
+    const sum = items.reduce((t, i) => t + (i.price || 0) * (i.qty || 1), 0);
+    return { store: s, items, sum };
+  });
+}
+
+function renderList() {
+  const n = state.list.filter(i => !i.checked).length;
+  const cnt = document.getElementById("listcount"); cnt.hidden = !state.list.length; cnt.textContent = n;
+  const box = document.getElementById("listbody");
+  const groups = groupList();
+  if (!groups.length) {
+    box.innerHTML = `<div class="empty">Sedlen er tom. Find varer under <b>Find varer</b> og tryk <b>+</b>, eller skriv en egen vare ovenfor.</div>`;
+    document.getElementById("grand").hidden = true;
+  } else {
+    box.innerHTML = groups.map(g => {
+      const ch = CHAIN_BY_NAME[g.store];
+      let lastCat = null;
+      const rows = g.items.map(it => {
+        const catHead = it.cat !== lastCat ? `<div class="cat">${esc(it.cat)}</div>` : ""; lastCat = it.cat;
+        const sub = [(it.q || []).map(k => QUALITY.find(q => q.key === k)?.short).filter(Boolean).join(", "), it.desc ? it.desc.slice(0, 70) : "", it.till ? "tilbud t.o.m. " + dateDa(it.till) : ""].filter(Boolean).join(" · ");
+        return `${catHead}<div class="row${it.checked ? " checked" : ""}" data-id="${esc(it._id)}">
+          <input type="checkbox" id="chk-${esc(it._id)}" ${it.checked ? "checked" : ""} aria-label="Købt: ${esc(it.name)}">
+          <label class="txt" for="chk-${esc(it._id)}"><div class="n">${esc(it.name)}</div>${sub ? `<div class="d">${esc(sub)}</div>` : ""}</label>
+          <span class="qty"><button data-q="-1" aria-label="Færre">−</button><span>${it.qty || 1}</span><button data-q="1" aria-label="Flere">+</button></span>
+          <span class="pr">${it.price != null ? kr(it.price * (it.qty || 1)) : ""}</span>
+          <button class="del" aria-label="Fjern ${esc(it.name)}">×</button>
+        </div>`;
+      }).join("");
+      return `<div class="storegroup"><div class="gh"><span class="t">${ch ? `<span class="dot" style="background:${ch.color}"></span>` : ""}${esc(g.store)}</span><span class="sum">${g.sum ? kr(Math.round(g.sum * 100) / 100) + " kr" : ""}</span></div>${rows}</div>`;
+    }).join("");
+    const total = groups.reduce((t, g) => t + g.sum, 0);
+    document.getElementById("grand").hidden = !total;
+    document.getElementById("grandsum").textContent = kr(Math.round(total * 100) / 100) + " kr";
+  }
+  document.getElementById("exporttext").value = exportText(groups);
+}
+document.getElementById("listbody").addEventListener("click", e => {
+  const row = e.target.closest(".row"); if (!row) return;
+  const it = state.list.find(i => i._id === row.dataset.id); if (!it) return;
+  if (e.target.closest(".del")) removeItems([it._id]);
+  const q = e.target.closest("[data-q]");
+  if (q) { const nq = Math.max(1, (it.qty || 1) + Number(q.dataset.q)); if (nq !== it.qty) patchItem(it._id, { qty: nq }); }
+});
+document.getElementById("listbody").addEventListener("change", e => {
+  if (e.target.type !== "checkbox") return;
+  const row = e.target.closest(".row"); patchItem(row.dataset.id, { checked: e.target.checked });
+});
+document.getElementById("freeform").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = document.getElementById("freetext").value.trim(); if (!v) return;
+  document.getElementById("freetext").value = "";
+  addToList({ pid: "fri:" + v.toLowerCase() + ":" + Date.now(), name: v, desc: "", chain: "Valgfri butik", price: null, up: null, unit: null, till: null, offer: false, cat: categorize(v) });
+});
+document.getElementById("clear-checked").onclick = () => {
+  const ids = state.list.filter(i => i.checked).map(i => i._id);
+  if (!ids.length) return toast("Ingen afkrydsede varer.");
+  removeItems(ids);
+};
+document.getElementById("clear-all").onclick = () => { if (state.list.length) document.getElementById("confirm-clear").hidden = false; };
+document.getElementById("clear-no").onclick = () => document.getElementById("confirm-clear").hidden = true;
+document.getElementById("clear-yes").onclick = () => { document.getElementById("confirm-clear").hidden = true; removeItems(state.list.map(i => i._id)); };
+
+function exportText(groups) {
+  if (!groups.length) return "";
+  const lines = [`Indkøb uge ${isoWeek()}`, ""];
+  for (const g of groups) {
+    const open = g.items.filter(i => !i.checked);
+    if (!open.length) continue;
+    const sum = open.reduce((t, i) => t + (i.price || 0) * (i.qty || 1), 0);
+    lines.push(`${g.store.toUpperCase()}${sum ? ` (ca. ${kr(Math.round(sum))} kr)` : ""}`);
+    let lastCat = null;
+    for (const i of open) {
+      if (i.cat !== lastCat) { lines.push(`${i.cat}:`); lastCat = i.cat; }
+      const ok = (i.q || []).includes("oeko") && !/øko|änglamark/i.test(i.name) ? " (øko)" : "";
+      lines.push(`${(i.qty || 1) > 1 ? i.qty + " x " : ""}${i.name}${ok}${i.price != null ? ` – ${kr(i.price)} kr` : ""}`);
+    }
+    lines.push("");
+  }
+  return lines.join("\n").trim();
+}
+document.getElementById("share").onclick = async () => {
+  const text = document.getElementById("exporttext").value;
+  if (!text) return toast("Sedlen er tom.");
+  try { await navigator.share({ title: `Indkøb uge ${isoWeek()}`, text }); }
+  catch (e) { if (e?.name !== "AbortError") toast("Deling virkede ikke. Brug Kopiér seddel."); }
+};
+document.getElementById("copy").onclick = async () => {
+  const ta = document.getElementById("exporttext");
+  if (!ta.value) return toast("Sedlen er tom.");
+  try { await navigator.clipboard.writeText(ta.value); toast("Kopieret. Sæt ind i Noter."); }
+  catch { ta.focus(); ta.select(); toast("Markeret. Tryk Kopiér i menuen."); }
+};
+
+/* ---------- Benzin ---------- */
+function renderFuel() {
+  const days = state.fuel.filter(d => d.avg).sort((a, b) => a.date.localeCompare(b.date));
+  const verdict = document.getElementById("verdict");
+  if (!days.length) {
+    verdict.className = "verdict"; verdict.innerHTML = `<div class="k">Benzin 95</div><div class="h">Ingen priser endnu</div><div>Priserne hentes hver morgen. Kom tilbage efter næste opdatering.</div>`;
+    return;
+  }
+  const today = days[days.length - 1];
+  const last = (n) => days.slice(-n);
+  const mean = a => a.reduce((t, x) => t + x, 0) / a.length;
+  const avg30 = mean(last(30).map(d => d.avg));
+  const min7 = Math.min(...last(7).map(d => d.avg));
+  const cheapestChain = today.chains ? Object.entries(today.chains).sort((a, b) => a[1] - b[1])[0] : null;
+  const wd = weekdayPattern(days);
+
+  // Anbefaling
+  const diff = today.avg - avg30; // kr
+  const tomorrowIdx = (new Date(today.date + "T12:00:00").getDay() + 1) % 7;
+  const todayIdx = new Date(today.date + "T12:00:00").getDay();
+  let cls, k, h, txt;
+  const dayNames = ["søndag", "mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lørdag"];
+  const bestDay = wd ? wd.indexOf(Math.min(...wd.filter(x => x != null))) : -1;
+  const waitGain = wd && wd[todayIdx] != null && wd[bestDay] != null ? wd[todayIdx] - wd[bestDay] : 0;
+  const daysToBest = bestDay >= 0 ? (bestDay - todayIdx + 7) % 7 : -1;
+  if (today.avg <= min7 + 0.005 || diff <= -0.10) {
+    cls = "good"; k = "Tank i dag"; h = `Godt tidspunkt: ${kr2(today.avg)} kr/l`;
+    txt = today.avg <= min7 + 0.005 ? "Laveste gennemsnitspris de seneste 7 dage." : `${Math.round(-diff * 100)} øre under 30-dages gennemsnittet.`;
+  } else if (wd && daysToBest > 0 && daysToBest <= 3 && waitGain >= 0.04) {
+    cls = "warn"; k = "Vent hvis du kan"; h = `${dayNames[bestDay][0].toUpperCase() + dayNames[bestDay].slice(1)} er typisk billigere`;
+    txt = `Om ${daysToBest === 1 ? "1 dag" : daysToBest + " dage"} har prisen i gennemsnit været ca. ${Math.round(waitGain * 100)} øre lavere end en ${dayNames[todayIdx]}. Er tanken næsten tom, så tank bare.`;
+  } else if (diff >= 0.15) {
+    cls = "bad"; k = "Dyrt i dag"; h = `${Math.round(diff * 100)} øre over normalen`;
+    txt = "Tank kun det nødvendige, hvis du kan vente et par dage.";
+  } else {
+    cls = "warn"; k = "Normal pris"; h = `${kr2(today.avg)} kr/l, tæt på normalen`;
+    txt = "Ingen grund til at vente. Tank når det passer dig.";
+  }
+  if (cheapestChain) txt += ` Billigst i dag: ${cheapestChain[0]} (${kr2(cheapestChain[1])} kr/l).`;
+  verdict.className = "verdict " + cls;
+  verdict.innerHTML = `<div class="k">${esc(k)}</div><div class="h">${esc(h)}</div><div>${esc(txt)}</div>`;
+
+  document.getElementById("fuelstats").innerHTML = [
+    [kr2(today.avg), "Gennemsnit i dag"],
+    [kr2(avg30), "Gennemsnit 30 dage"],
+    [(diff >= 0 ? "+" : "−") + Math.abs(Math.round(diff * 100)) + " øre", "I dag mod 30 dage"],
+  ].map(([v, l]) => `<div class="stat"><div class="v">${esc(v)}</div><div class="l">${esc(l)}</div></div>`).join("");
+
+  // Kæder
+  const bars = document.getElementById("chainbars");
+  if (today.chains && Object.keys(today.chains).length) {
+    const entries = Object.entries(today.chains).sort((a, b) => a[1] - b[1]);
+    const lo = entries[0][1], hi = entries[entries.length - 1][1];
+    const span = Math.max(hi - lo, 0.05);
+    bars.innerHTML = entries.map(([n, v]) => `<div class="bar${v === lo ? " min" : ""}"><span>${esc(n)}</span><span class="track"><span class="fill" style="display:block;width:${20 + 80 * (v - lo) / span}%"></span></span><span class="v">${kr2(v)}</span></div>`).join("");
+  } else bars.innerHTML = `<div class="muted small">Ingen kædepriser for i dag endnu.</div>`;
+
+  drawTrend(last(60));
+  drawWeekday(wd, days.length);
+  document.getElementById("fuelsource").textContent = `Landsdækkende pumpepriser fra detkoster.dk (CC BY 4.0), hentet hver morgen. Priser på den enkelte tank kan afvige. Seneste: ${dateDa(today.date)}.`;
+}
+
+// Afvigelse fra et centreret 7-dages gennemsnit, midlet pr. ugedag.
+function weekdayPattern(days) {
+  if (days.length < 14) return null;
+  const sums = Array(7).fill(0), cnt = Array(7).fill(0);
+  for (let i = 0; i < days.length; i++) {
+    const win = days.slice(Math.max(0, i - 3), i + 4);
+    if (win.length < 5) continue;
+    const m = win.reduce((t, d) => t + d.avg, 0) / win.length;
+    const wdI = new Date(days[i].date + "T12:00:00").getDay();
+    sums[wdI] += days[i].avg - m; cnt[wdI]++;
+  }
+  return sums.map((s, i) => cnt[i] >= 2 ? s / cnt[i] : null);
+}
+
+function drawTrend(days) {
+  const el = document.getElementById("trend");
+  if (days.length < 2) { el.innerHTML = `<div class="muted small">For få dage til en graf.</div>`; return; }
+  const W = 640, H = 220, L = 44, R = 14, T = 12, B = 28;
+  const vals = days.map(d => d.avg);
+  let lo = Math.floor((Math.min(...vals) - 0.05) * 10) / 10, hi = Math.ceil((Math.max(...vals) + 0.05) * 10) / 10;
+  const x = i => L + (W - L - R) * i / (days.length - 1);
+  const y = v => T + (H - T - B) * (hi - v) / (hi - lo);
+  const step = (hi - lo) > 0.8 ? 0.2 : 0.1;
+  let grid = "";
+  for (let v = lo; v <= hi + 1e-9; v += step) grid += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${kr2(v)}</text>`;
+  const pts = days.map((d, i) => `${x(i).toFixed(1)},${y(d.avg).toFixed(1)}`).join(" ");
+  const area = `${L},${H - B} ${pts} ${x(days.length - 1)},${H - B}`;
+  let xl = "";
+  const every = Math.ceil(days.length / 6);
+  days.forEach((d, i) => { if (i % every === 0 || i === days.length - 1) xl += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${new Date(d.date + "T12:00:00").toLocaleDateString("da-DK", { day: "numeric", month: "numeric" })}</text>`; });
+  const li = days.length - 1;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gennemsnitspris for blyfri 95 de seneste ${days.length} dage">
+    ${grid}
+    <polygon points="${area}" fill="var(--accent)" fill-opacity=".10"/>
+    <polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round"/>
+    <circle cx="${x(li)}" cy="${y(days[li].avg)}" r="4.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>
+    ${xl}
+  </svg>`;
+}
+
+function drawWeekday(wd, n) {
+  const el = document.getElementById("weekday");
+  const note = document.getElementById("weekdaynote");
+  if (!wd) { el.innerHTML = `<div class="muted small">Kræver mindst 14 dages data. Der er ${n} dage indtil videre.</div>`; note.textContent = ""; return; }
+  const order = [1, 2, 3, 4, 5, 6, 0], names = ["Søn", "Man", "Tir", "Ons", "Tor", "Fre", "Lør"];
+  const W = 640, H = 180, T = 22, B = 26, L = 10, R = 10;
+  const oere = wd.map(v => v == null ? null : v * 100);
+  const m = Math.max(4, ...oere.filter(v => v != null).map(Math.abs));
+  const mid = T + (H - T - B) / 2, half = (H - T - B) / 2;
+  const bw = (W - L - R) / 7;
+  const minV = Math.min(...oere.filter(v => v != null));
+  const bars = order.map((d, i) => {
+    const v = oere[d]; const cx = L + bw * i + bw / 2;
+    if (v == null) return `<text x="${cx}" y="${H - 8}" text-anchor="middle">${names[d]}</text>`;
+    const h = Math.abs(v) / m * half;
+    const yy = v < 0 ? mid : mid - h;
+    const fill = v === minV ? "var(--good)" : v > 0 ? "var(--bad)" : "var(--accent)";
+    const ly = v < 0 ? mid + h + 13 : mid - h - 5;
+    return `<rect x="${cx - bw * 0.3}" y="${yy}" width="${bw * 0.6}" height="${Math.max(h, 1)}" rx="2" fill="${fill}" fill-opacity="${v === minV ? 1 : .7}"/>
+      <text x="${cx}" y="${Math.min(Math.max(ly, 12), H - B + 2)}" text-anchor="middle" style="fill:var(--fg);font-weight:600">${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(Math.round(v))}</text>
+      <text x="${cx}" y="${H - 8}" text-anchor="middle">${names[d]}</text>`;
+  }).join("");
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gennemsnitlig prisafvigelse pr. ugedag i øre">
+    <line x1="${L}" x2="${W - R}" y1="${mid}" y2="${mid}" stroke="var(--line)"/>${bars}</svg>`;
+  const bestI = oere.indexOf(minV);
+  note.textContent = `Baseret på ${n} dages morgenpriser. ${["Søndag", "Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag"][bestI]} har været billigst. Mønsteret bliver mere sikkert, jo flere dage der samles.`;
+}
+
+/* ---------- Opstart ---------- */
+renderList();
+
+function showData(offerDocs, fixedDocs, fuelDays) {
+  state.products = buildIndex(offerDocs, fixedDocs);
+  state.fuel = fuelDays;
+  const upd = offerDocs.map(d => d.updated).filter(Boolean).sort().pop();
+  if (!state.products.length) {
+    document.getElementById("status").textContent = "";
+    document.getElementById("results").innerHTML = `<div class="empty">Ugens tilbud er ikke hentet endnu. De opdateres automatisk hver morgen.</div>`;
+  } else {
+    renderResults();
+    if (upd) document.getElementById("upd").textContent = `Opdateret ${new Date(upd).toLocaleString("da-DK", { weekday: "short", hour: "2-digit", minute: "2-digit" })}.`;
+  }
+  renderFuel();
+}
+
+// Selvstændig hjemmeside (GitHub Pages): data fra filer, seddel gemt på enheden.
+async function startStandalone() {
+  state.list = localList.load(); renderList();
+  if (navigator.share) {
+    document.getElementById("share").hidden = false;
+    document.getElementById("copytip").textContent = "Tryk Del og vælg Noter. Eller kopiér og sæt ind i en ny note.";
+  }
+  if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+  try {
+    const get = f => fetch("data/" + f, { cache: "no-cache" }).then(r => { if (!r.ok) throw new Error(f); return r.json(); });
+    const [offers, fixed, fuel] = await Promise.all([get("offers.json"), get("sortiment.json").catch(() => ({ docs: [] })), get("fuel.json").catch(() => ({ days: [] }))]);
+    showData(offers.docs || [], fixed.docs || [], fuel.days || []);
+  } catch {
+    document.getElementById("status").textContent = "Kunne ikke hente data. Tjek din forbindelse og genindlæs siden.";
+    renderFuel();
+  }
+}
+
+(async () => {
+  if (!window.claude) return startStandalone();
+  const db = await window.claude.use?.("db");
+  if (!db) {
+    state.list = localList.load(); renderList();
+    document.getElementById("status").textContent = "Data kan kun vises, når du er logget ind på claude.ai.";
+    renderFuel();
+    return;
+  }
+  state.db = db;
+  // Indkøbsseddel: live på tværs af telefon og computer.
+  db.collection("liste").onSnapshot(snap => {
+    state.list = snap.docs.map(d => ({ ...d.data(), _id: d.id }));
+    renderList(); renderResults();
+  }, () => toast("Indkøbssedlen kunne ikke opdateres live."));
+
+  try {
+    const [offers, fixed, fuel] = await Promise.all([
+      db.collection("offers").get(),
+      db.collection("sortiment").get(),
+      db.collection("fuel").orderBy("date", "desc").limit(400).get(),
+    ]);
+    showData(offers.docs.map(d => ({ ...d.data(), _id: d.id })), fixed.docs.map(d => d.data()), fuel.docs.map(d => d.data()));
+  } catch (e) {
+    document.getElementById("status").textContent = "Kunne ikke hente data. Genindlæs siden om lidt.";
+  }
+})();
+</script>
+
+</body></html>

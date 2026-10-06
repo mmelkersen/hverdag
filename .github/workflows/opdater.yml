@@ -1,0 +1,45 @@
+name: Opdater tilbud og benzinpris
+
+on:
+  schedule:
+    - cron: "30 5 * * *" # 07:30 dansk sommertid / 06:30 vintertid
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["hverdag.html", "hent-data.mjs", "site/**", ".github/workflows/**"]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  opdater:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Hent data
+        run: node hent-data.mjs --site
+      - name: Gem data i repoet
+        run: |
+          git config user.name "hverdag-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site
+          git diff --cached --quiet || git commit -m "Data $(date -u +%F)"
+          git push
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
