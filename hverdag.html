@@ -148,6 +148,8 @@ h3 { font-family: var(--font-display); font-weight: 600; font-size: 15px; text-t
 .bar .track { height: 12px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
 .bar .fill { height: 100%; background: var(--accent); border-radius: 3px; }
 .bar.min .fill { background: var(--good); }
+.bar.mine > span:first-child { font-weight: 700; }
+.bar.mine > span:first-child::after { content: " · din"; font-weight: 400; color: var(--muted); font-size: 12px; }
 .bar .v { font-variant-numeric: tabular-nums; text-align: right; font-weight: 600; }
 .foot { font-size: 12px; color: var(--muted); }
 a.src { color: var(--accent); font-weight: 600; text-decoration: none; white-space: nowrap; }
@@ -930,27 +932,73 @@ function renderFuel() {
     const entries = Object.entries(chainPrices).sort((a, b) => a[1] - b[1]);
     const lo = entries[0][1], hi = entries[entries.length - 1][1];
     const span = Math.max(hi - lo, 0.05);
-    bars.innerHTML = entries.map(([n, v]) => `<div class="bar${v === lo ? " min" : ""}"><span>${esc(n)}</span><span class="track"><span class="fill" style="display:block;width:${20 + 80 * (v - lo) / span}%"></span></span><span class="v">${kr2(v)}</span></div>`).join("");
+    bars.innerHTML = entries.map(([n, v]) => `<div class="bar${v === lo ? " min" : ""}${n === MY_CHAIN ? " mine" : ""}"><span>${esc(n)}</span><span class="track"><span class="fill" style="display:block;width:${20 + 80 * (v - lo) / span}%"></span></span><span class="v">${kr2(v)}</span></div>`).join("");
   } else bars.innerHTML = `<div class="muted small">Ingen kædepriser for i dag endnu.</div>`;
 
   drawTrend(last(60));
   drawWeekday(wd, days.length);
   renderStation(today);
-  document.getElementById("fuelsource").textContent = `Landsdækkende pumpepriser fra detkoster.dk (CC BY 4.0), hentet hver morgen. Uno-X fra Uno-X' eget API. Priser på den enkelte tank kan afvige. Seneste: ${dateDa(today.date)}.`;
+  document.getElementById("fuelsource").textContent = `Pumpepriser pr. kæde og station fra detkoster.dk (CC BY 4.0), hentet hver morgen. Priser på den enkelte tank kan afvige. Seneste: ${dateDa(today.date)}.`;
 }
 
 // Afvigelse fra et centreret 7-dages gennemsnit, midlet pr. ugedag.
 /* ---------- Din station (Uno-X, timevise data) ---------- */
-function renderStation(today) {
-  const el = document.getElementById("station");
-  if (state.mode !== "site") { el.hidden = true; return; }
-  el.hidden = false;
-  const u = state.unox;
-  if (!u || !u.changes?.length) {
-    el.innerHTML = `<h3>Din station</h3><div class="sname" style="font-family:var(--font-display);font-weight:700;font-size:24px">Uno-X Birkerød Kongevej</div>
-      <div class="small muted">Venter på data fra Uno-X. Når adgangen til Uno-X' pris-API er sat op, ser du her prisen på din station time for time, det billigste tidspunkt på døgnet og ugen, og Uno-X-stationerne i nærheden.</div>`;
+const MY_CHAIN = "Uno-X";
+
+// Billigste stationer (alle kæder) inden for 8 km, fra morgenens landsdata.
+function nearbyAllHtml(today, cur) {
+  if (!today?.nearby?.length) return "";
+  const rows = today.nearby.map(n => {
+    const df = cur != null ? Math.round((n.price - cur) * 100) : null;
+    return `<div class="r"><span class="nm">${esc(n.chain)} · ${esc(n.address.split(",")[0])} · ${n.km.toLocaleString("da-DK", { maximumFractionDigits: 1 })} km</span><span class="pp">${kr2(n.price)}</span><span class="df ${df < 0 ? "lo" : df > 0 ? "hi" : ""}">${df == null ? "" : df === 0 ? "samme" : (df > 0 ? "+" : "−") + Math.abs(df) + " øre"}</span></div>`;
+  }).join("");
+  return `<h3>Billigst i nærheden i morges (alle kæder)</h3><div class="near">${rows}</div>`;
+}
+
+// Uden Uno-X-nøgle: din stations morgenpris fra detkoster.dk, gemt dag for dag.
+function renderStationDaily(el, today) {
+  const hd = state.fuel.filter(d => d.home?.price).sort((a, b) => a.date.localeCompare(b.date));
+  if (!today?.home) {
+    el.innerHTML = `<h3>Din station</h3><div class="sname">Uno-X Birkerød Kongevej</div>
+      <div class="small muted">Ingen pris for din station i dag endnu. Den hentes hver morgen.</div>`;
     return;
   }
+  const cur = today.home.price;
+  const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const last7 = hd.slice(-7).map(d => d.home.price), last14 = hd.slice(-14).map(d => d.home.price);
+  const mean7 = last7.length >= 3 ? mean(last7) : null, min14 = last14.length >= 3 ? Math.min(...last14) : null;
+  const cheapestNear = today.nearby?.[0];
+  let cls = "none", label = "Normal pris", txt = "";
+  if (mean7 != null && (cur <= min14 + 0.005 || cur <= mean7 - 0.10)) {
+    cls = "good"; label = "Tank i dag"; txt = cur <= min14 + 0.005 ? `Laveste morgenpris på stationen i ${last14.length} dage.` : `${Math.round((mean7 - cur) * 100)} øre under stationens ugesnit.`;
+  } else if (mean7 != null && cur >= mean7 + 0.10) {
+    cls = "bad"; label = "Dyrere end normalt"; txt = `${Math.round((cur - mean7) * 100)} øre over stationens ugesnit.`;
+  } else if (today.min != null && cur <= today.min + 0.005) {
+    cls = "good"; label = "Blandt de billigste"; txt = "Samme pris som den billigste kæde i dag.";
+  } else if (today.min != null) {
+    cls = "warn"; txt = `${Math.round((cur - today.min) * 100)} øre over den billigste kæde i dag.`;
+  }
+  if (cheapestNear && cheapestNear.price < cur - 0.005) txt += ` ${cheapestNear.chain} på ${cheapestNear.address.split(",")[0]} er ${Math.round((cur - cheapestNear.price) * 100)} øre billigere.`;
+  const wd = weekdayPattern(hd.map(d => ({ date: d.date, avg: d.home.price })));
+  el.innerHTML = `<div class="sthead"><div><h3>Din station</h3><div class="sname">${esc(today.home.chain)} Birkerød Kongevej</div><div class="small muted">${esc(today.home.address)}</div></div>
+      <div class="tag">${kr2(cur)}<small>i morges</small></div></div>
+    <div class="wverdict"><span class="wv ${cls}">${esc(label)}</span><span class="small">${esc(txt.trim())}</span></div>
+    <div class="wnums">
+      <div><div class="v">${mean7 != null ? kr2(mean7) : "–"}</div><div class="l">Stationens snit 7 dage</div></div>
+      <div><div class="v">${min14 != null ? kr2(min14) : "–"}</div><div class="l">Laveste 14 dage</div></div>
+      <div><div class="v">${today.avg ? kr2(today.avg) : "–"}</div><div class="l">Landsgennemsnit i dag</div></div></div>
+    ${nearbyAllHtml(today, cur)}
+    <h3>Ugedage på stationen</h3>
+    ${wd ? `<div class="chart">${devBars([1, 2, 3, 4, 5, 6, 0].map(i => wd[i] == null ? null : wd[i] * 100), ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"], 1, null)}</div>`
+      : `<div class="foot">Klar når der er samlet 14 morgenpriser (${hd.length} indtil nu).</div>`}
+    <div class="foot">Morgenpriser fra detkoster.dk. Med en Uno-X-nøgle får du også timepriser og det billigste tidspunkt på døgnet.</div>`;
+}
+function renderStation(today) {
+  const el = document.getElementById("station");
+  if (state.mode !== "site" && !today?.home) { el.hidden = true; return; }
+  el.hidden = false;
+  const u = state.unox;
+  if (!u || !u.changes?.length) return renderStationDaily(el, today);
   const ch = u.changes.map(([t, p]) => [Date.parse(t), p]).sort((a, b) => a[0] - b[0]);
   const at = t => { let p = null; for (const [ts, v] of ch) { if (ts <= t) p = v; else break; } return p; };
   const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
@@ -1012,6 +1060,7 @@ function renderStation(today) {
     ${wdStation ? `<div class="chart">${devBars([1, 2, 3, 4, 5, 6, 0].map(i => wdStation[i] == null ? null : wdStation[i] * 100), ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"], 1, null)}</div>`
       : `<div class="foot">Klar når der er samlet 14 dage (${dailyMeans.length} indtil nu).</div>`}
     ${near ? `<h3>Uno-X i nærheden (forskel til din station)</h3><div class="near">${near}</div>` : ""}
+    ${nearbyAllHtml(today, cur)}
     <div class="foot">Kilde: Uno-X' officielle pris-API, tjekket hver time. Senest ændret ${esc(new Date(u.checked).toLocaleString("da-DK", { hour: "2-digit", minute: "2-digit" }))}.</div>`;
 }
 

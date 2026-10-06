@@ -26,7 +26,7 @@ async function token() {
 const num = (s) => Number(String(s).replace(",", "."));
 // "2025-11-26 11:21:13.210000" (UTC) → ISO
 const isoUtc = (s) => (s ? new Date(String(s).replace(" ", "T").replace(/(\.\d{3})\d*$/, "$1") + "Z").toISOString() : null);
-function km(a, b) {
+export function km(a, b) {
   const R = 6371, rad = (d) => (d * Math.PI) / 180;
   const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;

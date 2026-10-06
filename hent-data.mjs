@@ -2,7 +2,7 @@
 // og dagens benzinpriser, og skriver dem som JSON-dokumenter i ./out klar til artefaktens database.
 // Kør: node hent-data.mjs
 import { mkdir, writeFile, readFile, rm } from "node:fs/promises";
-import { hasUnoxCredentials, fetchUnox, updateUnox, sendNotification } from "./unox.mjs";
+import { hasUnoxCredentials, fetchUnox, updateUnox, sendNotification, HOME, km } from "./unox.mjs";
 
 const OUT = new URL("./out/", import.meta.url);
 const UA = { "User-Agent": "Mozilla/5.0 (Hverdag indkoebsliste)" };
@@ -141,6 +141,37 @@ async function fetchRemaAssortment() {
 
 const CHAIN_NAMES = { CircleK: "Circle K", Goon: "Go'on", OIL: "OIL!", UnoX: "Uno-X" };
 
+// Henter detkoster.dk/benzin og trækker kædepriser + stationspriser for blyfri 95 ud af sidens indlejrede data.
+// Tilføjer manglende kæder til `chains` og returnerer din station og de billigste stationer i nærheden.
+async function fetchFuelStations(chains) {
+  const res = await fetch("https://www.detkoster.dk/benzin", { headers: UA });
+  if (!res.ok) throw new Error(`${res.status} detkoster.dk/benzin`);
+  const html = (await res.text()).replace(/\\"/g, '"');
+  for (const m of html.matchAll(/\{"chain":"(\w+)","price_type":"pumpepris","blyfri95":([\d.]+)/g)) {
+    const name = CHAIN_NAMES[m[1]] || m[1];
+    if (!chains[name]) chains[name] = Number(m[2]);
+  }
+  const stations = new Map();
+  const re = /"chain":"(\w+)","region":"([^"]*)","address":"([^"]*)","product_name":"([^"]*)","price":([\d.]+),"lat":([\d.-]+),"lng":([\d.-]+)/g;
+  for (const m of html.matchAll(re)) {
+    const [, chain, , address, product, price, lat, lng] = m;
+    if (!/95/.test(product) || /\+|plus|premium|extra|miles\+/i.test(product)) continue;
+    const key = chain + "|" + address;
+    const st = { chain: CHAIN_NAMES[chain] || chain, address, price: Number(price), lat: Number(lat), lng: Number(lng) };
+    if (!stations.has(key) || st.price < stations.get(key).price) stations.set(key, st);
+  }
+  const all = [...stations.values()];
+  const home = all.find((s) => s.address.toLowerCase().startsWith(HOME.address.toLowerCase()) && s.address.includes(HOME.postalCode));
+  if (!home) return {};
+  const nearby = all
+    .filter((s) => s !== home)
+    .map((s) => ({ chain: s.chain, address: s.address, km: Math.round(km(home, s) * 10) / 10, price: s.price }))
+    .filter((s) => s.km <= 8)
+    .sort((a, b) => a.price - b.price || a.km - b.km)
+    .slice(0, 6);
+  return { home: { chain: home.chain, address: home.address, price: home.price }, nearby };
+}
+
 async function fetchFuel() {
   const j = await getJson("https://www.detkoster.dk/benzin/data.json");
   const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Copenhagen" });
@@ -148,9 +179,12 @@ async function fetchFuel() {
   for (const c of j.chains || []) {
     if (c.blyfri95) chains[CHAIN_NAMES[c.chain] || c.chain] = c.blyfri95;
   }
+  // Websiden har flere kæder end data.json (bl.a. Uno-X) og priser pr. station.
+  let local = {};
+  try { local = await fetchFuelStations(chains); } catch (e) { console.error("Stationspriser:", e.message); }
   const p = j.products?.blyfri95 || {};
   const docs = [
-    { date: today, avg: p.avg ?? null, min: p.min ?? null, max: p.max ?? null, chains, source: "detkoster.dk", fetched: new Date().toISOString() },
+    { date: today, avg: p.avg ?? null, min: p.min ?? null, max: p.max ?? null, chains, ...local, source: "detkoster.dk", fetched: new Date().toISOString() },
   ];
   const history = (j.history_30d || []).filter((h) => h.blyfri95 && h.date !== today).map((h) => ({ date: h.date, avg: h.blyfri95 }));
   // Historik (kun gennemsnit) skrives kun med --historik, så rigtige dagsdata ikke overskrives.
