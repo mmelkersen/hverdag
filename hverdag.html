@@ -53,7 +53,7 @@ header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; b
 .brand h1 { font-family: var(--font-display); font-weight: 700; font-size: 30px; letter-spacing: .01em; margin: 0; }
 .brand .wk { font-family: var(--font-display); font-weight: 600; color: var(--muted); font-size: 18px; text-transform: uppercase; letter-spacing: .06em; }
 nav.tabs { display: flex; gap: 4px; margin-top: 10px; border-bottom: 1px solid var(--line); }
-nav.tabs button { flex: 1; appearance: none; border: 0; background: none; color: var(--muted); font: 600 15px var(--font-body); padding: 10px 8px 12px; border-bottom: 3px solid transparent; cursor: pointer; display: flex; gap: 6px; justify-content: center; align-items: center; }
+nav.tabs button { flex: 1; appearance: none; border: 0; background: none; color: var(--muted); font: 600 15px var(--font-body); padding: 10px 4px 12px; border-bottom: 3px solid transparent; cursor: pointer; display: flex; gap: 6px; justify-content: center; align-items: center; }
 nav.tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
 nav.tabs .count { background: var(--accent); color: var(--accent-fg); border-radius: 99px; font-size: 12px; padding: 0 7px; min-width: 20px; }
 button:focus-visible, input:focus-visible, a:focus-visible, label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -142,7 +142,7 @@ h3 { font-family: var(--font-display); font-weight: 600; font-size: 15px; text-t
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 10px; min-width: 0; }
 .chart { width: 100%; overflow-x: auto; }
 .chart svg { display: block; width: 100%; height: auto; }
-.chart text { fill: var(--muted); font: 11px var(--font-body); }
+.chart text { fill: var(--muted); font: 17px var(--font-body); }
 .bars { display: grid; gap: 6px; }
 .bar { display: grid; grid-template-columns: 84px 1fr 64px; align-items: center; gap: 8px; font-size: 14px; }
 .bar .track { height: 12px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
@@ -150,6 +150,27 @@ h3 { font-family: var(--font-display); font-weight: 600; font-size: 15px; text-t
 .bar.min .fill { background: var(--good); }
 .bar .v { font-variant-numeric: tabular-nums; text-align: right; font-weight: 600; }
 .foot { font-size: 12px; color: var(--muted); }
+a.src { color: var(--accent); font-weight: 600; text-decoration: none; white-space: nowrap; }
+a.src:hover { text-decoration: underline; }
+.follow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.watch { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.watch .wh { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.watch .wh .chips { flex-wrap: nowrap; flex: none; }
+.watch .wh .chip { white-space: nowrap; }
+.watch .wt { font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.1; overflow-wrap: anywhere; }
+.watch .wsub { font-size: 12px; color: var(--muted); }
+.wverdict { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.wv { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-radius: 4px; padding: 3px 7px; }
+.wv.good { background: var(--good-bg); color: var(--good); } .wv.warn { background: var(--warn-bg); color: var(--warn); } .wv.none { background: var(--surface-2); color: var(--muted); }
+.wnums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.wnums div { min-width: 0; } .wnums .v { font-family: var(--font-display); font-weight: 700; font-size: 20px; font-variant-numeric: tabular-nums; } .wnums .l { font-size: 11px; color: var(--muted); }
+.wlist { display: grid; gap: 4px; font-size: 13px; }
+.wlist .r { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.wlist .r .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wlist .r .pp { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend .ln { width: 16px; height: 0; border-top: 2px dashed var(--muted); display: inline-block; }
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 99px; font-weight: 600; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
 @media (max-width: 480px) {
   .stats { grid-template-columns: 1fr 1fr; }
@@ -163,9 +184,10 @@ h3 { font-family: var(--font-display); font-weight: 600; font-size: 15px; text-t
   <header class="top">
     <div class="brand"><h1>Hverdag</h1><span class="wk" id="wk"></span></div>
     <nav class="tabs" role="tablist">
-      <button role="tab" id="tab-sog" aria-selected="true" data-view="sog">Find varer</button>
-      <button role="tab" id="tab-liste" aria-selected="false" data-view="liste">Indkøbsseddel <span class="count" id="listcount" hidden>0</span></button>
-      <button role="tab" id="tab-benzin" aria-selected="false" data-view="benzin">Benzin 95</button>
+      <button role="tab" id="tab-sog" aria-selected="true" data-view="sog">Find</button>
+      <button role="tab" id="tab-liste" aria-selected="false" data-view="liste">Seddel <span class="count" id="listcount" hidden>0</span></button>
+      <button role="tab" id="tab-priser" aria-selected="false" data-view="priser">Priser</button>
+      <button role="tab" id="tab-benzin" aria-selected="false" data-view="benzin">Benzin</button>
     </nav>
   </header>
 
@@ -187,6 +209,7 @@ h3 { font-family: var(--font-display); font-weight: 600; font-size: 15px; text-t
       </div>
     </div>
     <div class="small muted"><span id="status">Henter ugens tilbud…</span> <span id="upd"></span></div>
+    <div class="follow" id="followbox" hidden><button class="chip" id="followbtn">Følg prisen på denne søgning</button></div>
     <div class="results" id="results"></div>
   </section>
 
@@ -224,6 +247,21 @@ h3 { font-family: var(--font-display); font-weight: 600; font-size: 15px; text-t
     </div>
   </section>
 
+  <!-- PRISER -->
+  <section class="view" id="view-priser" hidden>
+    <div>
+      <h2>Prisudvikling</h2>
+      <p class="small muted" style="margin:4px 0 0">Følg varer, du vil købe på lager, når de er billige. Grafen viser tilbud pr. kæde (farvede streger) mod Rema 1000's faste pris (stiplet).</p>
+    </div>
+    <form class="search" id="watchform">
+      <input id="watchterm" placeholder='Fx hakket oksekød eller "smør"' autocomplete="off" aria-label="Vare at følge">
+      <button class="btn primary" type="submit">Følg</button>
+    </form>
+    <div class="small muted">Tip: <b>-pålæg</b> udelukker et ord, og <b>"smør"</b> med citationstegn betyder præcis det ord.</div>
+    <div id="watches" class="results"></div>
+    <div class="foot" id="histnote"></div>
+  </section>
+
   <!-- BENZIN -->
   <section class="view" id="view-benzin" hidden>
     <div class="verdict" id="verdict"><div class="k">Benzin 95</div><div class="h">Henter priser…</div></div>
@@ -254,6 +292,9 @@ const CHAINS = [
   { key: "rema", name: "Rema 1000", color: "var(--c-rema)" },
 ];
 const CHAIN_BY_NAME = Object.fromEntries(CHAINS.map(c => [c.name, c]));
+// Butikkernes adresser på eTilbudsavis, hvor tilbuddet kan ses i selve avisen.
+const SLUG = { netto: "Netto", foetex: "fotex", "365": "365discount", rema: "REMA-1000" };
+const SITE_URL = "https://mmelkersen.github.io/hverdag/";
 const STORE_ORDER = [...CHAINS.map(c => c.name), "Valgfri butik"];
 
 // Typisk rækkefølge gennem butikken.
@@ -278,7 +319,8 @@ const RULES = [
   ["Frugt & grønt", ["æble", "^pære", "banan", "appelsin", "citron", "lime", "mandarin", "klementin", "drue", "melon", "jordbær", "hindbær", "blåbær", "avocado", "kiwi", "ananas", "mango", "tomat", "agurk", "salat", "peberfrugt", "^løg", "rødløg", "kartof", "gulerød", "gulerod", "broccoli", "blomkål", "^kål", "hvidkål", "rødkål", "squash", "champignon", "svampe", "porre", "spinat", "ingefær", "hvidløg", "frugt", "grønt", "^bær", "græskar", "rødbede", "selleri", "asparges", "majs", "bønner, friske"]],
   ["Kolonial", ["pasta", "spaghetti", "^ris", "basmati", "^mel", "hvedemel", "sukker", "kaffe", "^te ", "^te,", "havregryn", "müsli", "musli", "cornflakes", "morgenmad", "ketchup", "mayonnaise", "remoulade", "sennep", "^olie", "olivenolie", "krydderi", "dåse", "konserves", "bønner", "flåede", "sauce", "bouillon", "nudler", "honning", "marmelade", "syltetøj", "nutella", "kakao", "bagepulver", "gær", "eddike", "^salt", "peber"]],
 ];
-const norm = s => (s || "").toLowerCase().replace(/\s+/g, " ");
+// Udvider forkortelser fra Remas varenavne: "HK. OKSEKØD" → "hakket oksekød", "m/" → "med".
+const norm = s => (s || "").toLowerCase().replace(/\s+/g, " ").replace(/(^|[^a-zæøå])hk\. ?/g, "$1hakket ").replace(/(^|[^a-zæøå])m\//g, "$1med ");
 
 // Kvalitetsfiltre. Tilbud genkendes på teksten; Remas faste varer også på Remas egne mærker.
 const WB = "(^|[^a-zæøå])";
@@ -289,6 +331,30 @@ const QUALITY = [
   { key: "fisk", name: "MSC/ASC-fisk", short: "MSC/ASC", re: /(^|[^a-z])(msc|asc)([^a-z]|$)/ },
   { key: "sund", name: "Nøglehul/fuldkorn", short: "Nøglehul", re: /nøglehul|fuldkorn|uden tilsat sukker|ikke tilsat sukker/, labels: ["noeglehul", "fuldkorn", "sukker"] },
 ];
+// Søgesyntaks: ord skal alle findes; korte ord (≤3 tegn) som helt ord eller sidst i et ord;
+// "ord" = præcis ord; -ord = udelukker.
+function parseQuery(str) {
+  const parts = (norm(str).match(/-?"[^"]+"|\S+/g) || []);
+  const make = p => {
+    const exact = p.startsWith('"');
+    const w = p.replace(/"/g, "").trim();
+    if (!w) return null;
+    const e = w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (exact) return new RegExp("(^|[^a-zæøå0-9])" + e + "($|[^a-zæøå0-9])");
+    // Korte ord: helt ord eller sidst i et sammensat ord ("frilandsæg"), ikke "æggekoger".
+    if (w.length <= 3) return new RegExp(e + "($|[^a-zæøå0-9])");
+    return { test: t => t.includes(w) };
+  };
+  const inc = [], exc = [];
+  for (const p of parts) {
+    if (p.startsWith("-") && p.length > 1) { const m = make(p.slice(1)); if (m) exc.push(m); }
+    else { const m = make(p); if (m) inc.push(m); }
+  }
+  return { inc, exc, empty: !inc.length };
+}
+const matches = (hay, pq) => pq.inc.every(r => r.test(hay)) && !pq.exc.some(r => r.test(hay));
+const normUnit = u => ({ ltr: "l", liter: "l", pcs: "stk", stk: "stk", kg: "kg", l: "l" }[(u || "").toLowerCase()] || (u || "").toLowerCase());
+
 function qualityFlags(text, labels) {
   const t = norm(text), ls = (labels || "").split(",");
   return QUALITY.filter(q => q.re.test(t) || (q.labels || []).some(l => ls.includes(l))).map(q => q.key);
@@ -350,10 +416,11 @@ function showView(v) {
   for (const b of document.querySelectorAll("nav.tabs button")) b.setAttribute("aria-selected", String(b.dataset.view === v));
   for (const s of document.querySelectorAll("section.view")) s.hidden = s.id !== "view-" + v;
   try { localStorage.setItem("hverdag-tab", v); } catch {}
+  if (v === "priser") renderWatches();
 }
 document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => showView(b.dataset.view)));
 const startTab = (location.hash || "").slice(1) || (() => { try { return localStorage.getItem("hverdag-tab"); } catch { return null; } })();
-if (["sog", "liste", "benzin"].includes(startTab)) showView(startTab);
+if (["sog", "liste", "priser", "benzin"].includes(startTab)) showView(startTab);
 
 /* ---------- Filtre ---------- */
 const chipBox = document.getElementById("chainchips");
@@ -400,15 +467,17 @@ function buildIndex(offerDocs, fixedDocs) {
   for (const d of offerDocs) {
     const chain = CHAINS.find(c => c.name === d.chain || c.key === d._id);
     if (!chain) continue;
-    for (const [name, desc, price, pre, up, unit, from, till] of d.items || []) {
-      out.push({ id: chain.key + ":o:" + name + ":" + price, chain: chain.name, ck: chain.key, name, desc, price, pre, up, unit, from, till, offer: true,
+    for (const [name, desc, price, pre, up, unit, from, till, oid, cid] of d.items || []) {
+      const url = oid && cid ? `https://etilbudsavis.dk/${SLUG[chain.key]}?publication=${encodeURIComponent(cid)}&offer=${encodeURIComponent(oid)}` : null;
+      out.push({ id: chain.key + ":o:" + name + ":" + price, chain: chain.name, ck: chain.key, name, desc, price, pre, up, unit: normUnit(unit), from, till, offer: true, url,
         hay: norm(name + " " + desc), cat: categorize(name, desc), q: qualityFlags(name + " " + desc) });
     }
   }
   for (const d of fixedDocs) {
-    for (const [name, desc, price, up, unit, camp, labels] of d.items || []) {
+    for (const [name, desc, price, up, unit, camp, labels, rid] of d.items || []) {
       const nm = name.charAt(0) + name.slice(1).toLowerCase();
-      out.push({ id: "rema:f:" + name + ":" + desc, chain: "Rema 1000", ck: "rema", name: nm, desc, price, pre: null, up, unit: (unit || "").toLowerCase(), offer: false, campaign: !!camp,
+      out.push({ id: "rema:f:" + name + ":" + desc, chain: "Rema 1000", ck: "rema", name: nm, desc, price, pre: null, up, unit: normUnit(unit), offer: false, campaign: !!camp,
+        url: rid ? "https://shop.rema1000.dk/varer/" + rid : null,
         hay: norm(name + " " + desc), cat: categorize(name, desc), q: qualityFlags(name + " " + desc, labels) });
     }
   }
@@ -416,10 +485,11 @@ function buildIndex(offerDocs, fixedDocs) {
 }
 
 function search() {
-  const words = norm(state.query).trim().split(" ").filter(Boolean);
+  const pq = parseQuery(state.query);
+  const words = pq.empty ? [] : [1];
   let res = state.products.filter(p => state.chains.has(p.ck) && (p.offer || state.inclFixed));
   if (state.quality.size) res = res.filter(p => [...state.quality].every(k => p.q.includes(k)));
-  if (words.length) res = res.filter(p => words.every(w => p.hay.includes(w)));
+  if (words.length) res = res.filter(p => matches(p.hay, pq));
   else if (!state.quality.size) res = res.filter(p => p.offer);
   const key = state.sort === "unit" ? (p => p.up ?? Infinity) : (p => p.price ?? Infinity);
   if (words.length) res.sort((a, b) => key(a) - key(b) || (a.price - b.price));
@@ -442,6 +512,9 @@ function renderResults() {
     ? `${res.length} varer matcher "${state.query.trim()}"` + (res.length ? (state.sort === "unit" ? ", billigst pr. kg/l først" : ", laveste pris først") : "")
     : state.quality.size ? `${res.length} varer: ${QUALITY.filter(q => state.quality.has(q.key)).map(q => q.name.toLowerCase()).join(" + ")}. Skriv for at søge.`
     : `Ugens tilbud: ${res.length} varer. Skriv for at søge.`;
+  const fb = document.getElementById("followbox");
+  fb.hidden = !words || state.mode !== "site";
+  if (!fb.hidden) document.getElementById("followbtn").textContent = `Følg prisen på "${state.query.trim()}"`;
   if (!res.length) {
     box.innerHTML = `<div class="empty">Ingen varer matcher. Prøv et kortere ord, fx "kylling" i stedet for "kyllingebryst"${state.quality.size ? ", eller slå et kvalitetsfilter fra" : ""}.</div>`;
     return;
@@ -454,10 +527,11 @@ function renderResults() {
     const fixed = p.offer ? "" : `<span class="pill fixed">${p.campaign ? "Kampagne" : "Fast pris"}</span>`;
     const till = p.offer && p.till ? `<span>t.o.m. ${esc(dateDa(p.till))}</span>` : "";
     const done = inList.has(p.id);
+    const link = p.url ? `<a class="src" href="${esc(p.url)}" target="_blank" rel="noopener">${p.offer ? "Se i avisen ↗" : "Se hos Rema ↗"}</a>` : "";
     return `<article class="item">
       <div class="name">${esc(p.name)}</div>
       <div class="desc">${esc(p.desc)}</div>
-      <div class="meta"><span class="store"><span class="dot" style="background:${ch.color}"></span>${esc(p.chain)}</span>${till}${isBest}${save}${qb}${fixed}</div>
+      <div class="meta"><span class="store"><span class="dot" style="background:${ch.color}"></span>${esc(p.chain)}</span>${till}${isBest}${save}${qb}${fixed}${link}</div>
       <div class="side">
         <div class="tag${p.offer ? "" : " plain"}">${kr(p.price)}${p.up != null ? `<small>${kr2(p.up)} kr/${esc(unitLabel(p.unit))}</small>` : ""}</div>
         <button class="add${done ? " done" : ""}" data-pid="${esc(p.id)}" aria-label="${done ? "På sedlen" : "Tilføj " + esc(p.name) + " til indkøbsseddel"}">${done ? "✓" : "+"}</button>
@@ -473,7 +547,7 @@ document.getElementById("results").addEventListener("click", e => {
   const p = state.products.find(x => x.id === b.dataset.pid); if (!p) return;
   const existing = state.list.find(i => i.pid === p.id);
   if (existing) { showView("liste"); return; }
-  addToList({ pid: p.id, name: p.name, desc: p.desc, chain: p.chain, price: p.price, up: p.up, unit: p.unit, till: p.till || null, offer: p.offer, cat: p.cat, q: p.q });
+  addToList({ pid: p.id, name: p.name, desc: p.desc, chain: p.chain, price: p.price, up: p.up, unit: p.unit, till: p.till || null, offer: p.offer, cat: p.cat, q: p.q, url: p.url || null });
 });
 
 /* ---------- Indkøbsseddel (db) ---------- */
@@ -528,7 +602,7 @@ function renderList() {
         const sub = [(it.q || []).map(k => QUALITY.find(q => q.key === k)?.short).filter(Boolean).join(", "), it.desc ? it.desc.slice(0, 70) : "", it.till ? "tilbud t.o.m. " + dateDa(it.till) : ""].filter(Boolean).join(" · ");
         return `${catHead}<div class="row${it.checked ? " checked" : ""}" data-id="${esc(it._id)}">
           <input type="checkbox" id="chk-${esc(it._id)}" ${it.checked ? "checked" : ""} aria-label="Købt: ${esc(it.name)}">
-          <label class="txt" for="chk-${esc(it._id)}"><div class="n">${esc(it.name)}</div>${sub ? `<div class="d">${esc(sub)}</div>` : ""}</label>
+          <label class="txt" for="chk-${esc(it._id)}"><div class="n">${esc(it.name)}</div>${sub || it.url ? `<div class="d">${esc(sub)}${it.url ? ` <a class="src" href="${esc(it.url)}" target="_blank" rel="noopener">${it.offer ? "avis ↗" : "Rema ↗"}</a>` : ""}</div>` : ""}</label>
           <span class="qty"><button data-q="-1" aria-label="Færre">−</button><span>${it.qty || 1}</span><button data-q="1" aria-label="Flere">+</button></span>
           <span class="pr">${it.price != null ? kr(it.price * (it.qty || 1)) : ""}</span>
           <button class="del" aria-label="Fjern ${esc(it.name)}">×</button>
@@ -598,6 +672,194 @@ document.getElementById("copy").onclick = async () => {
   try { await navigator.clipboard.writeText(ta.value); toast("Kopieret. Sæt ind i Noter."); }
   catch { ta.focus(); ta.select(); toast("Markeret. Tryk Kopiér i menuen."); }
 };
+
+/* ---------- Prisudvikling ---------- */
+const DEFAULT_WATCHES = [
+  { id: "w1", term: "hakket oksekød -grøn" },
+  { id: "w2", term: '"smør"' },
+  { id: "w3", term: "æg -pålæg -væg -indlæg" },
+];
+const watchStore = {
+  load() { try { const v = JSON.parse(localStorage.getItem("hverdag-watch")); return Array.isArray(v) ? v : DEFAULT_WATCHES; } catch { return DEFAULT_WATCHES; } },
+  save(l) { try { localStorage.setItem("hverdag-watch", JSON.stringify(l)); } catch {} },
+};
+state.watches = watchStore.load();
+state.hist = null; // { offers, fixed, start }
+
+async function loadHistory() {
+  if (state.hist || state.histLoading) return state.histLoading;
+  const get = f => fetch("data/history/" + f, { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null);
+  const y = new Date().getFullYear();
+  state.histLoading = Promise.all([get(`tilbud-${y - 1}.json`), get(`tilbud-${y}.json`), get("rema-faste.json")]).then(([a, b, f]) => {
+    const offers = [];
+    for (const h of [a, b]) if (h) for (const [ci, ni, price, up, unit, from, till] of h.recs) {
+      const label = h.names[ni] || "";
+      offers.push({ chain: h.chains[ci], name: label.split(" | ")[0], price, up, unit: normUnit(unit), from, till, hay: norm(label), q: qualityFlags(label) });
+    }
+    const fixed = [];
+    for (const it of Object.values(f?.items || {})) {
+      fixed.push({ name: it.n.charAt(0) + it.n.slice(1).toLowerCase(), unit: normUnit(it.u), h: it.h, hay: norm(it.n + " " + it.d), q: qualityFlags(it.n + " " + it.d, it.l) });
+    }
+    // Opsamlingen startede den dag, Rema-historikken blev oprettet; ældre tilbud var blot stadig aktive.
+    state.hist = { offers, fixed, start: f?.start || todayIso() };
+  });
+  return state.histLoading;
+}
+
+function addWatch(term) {
+  term = term.trim(); if (!term) return;
+  if (state.watches.some(w => w.term === term)) { toast("Følger allerede " + term); showView("priser"); return; }
+  state.watches = [{ id: "w" + Date.now(), term }, ...state.watches];
+  watchStore.save(state.watches);
+  toast("Følger nu: " + term);
+  showView("priser");
+}
+document.getElementById("watchform").addEventListener("submit", e => {
+  e.preventDefault();
+  const el = document.getElementById("watchterm"); addWatch(el.value); el.value = "";
+});
+document.getElementById("followbtn").onclick = () => addWatch(state.query);
+document.getElementById("watches").addEventListener("click", e => {
+  const card = e.target.closest(".watch"); if (!card) return;
+  const w = state.watches.find(x => x.id === card.dataset.id); if (!w) return;
+  if (e.target.closest(".wdel")) { state.watches = state.watches.filter(x => x !== w); watchStore.save(state.watches); renderWatches(); }
+  if (e.target.closest(".woeko")) { w.oeko = !w.oeko; watchStore.save(state.watches); renderWatches(); }
+});
+
+const todayIso = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Copenhagen" });
+const addDays = (iso, n) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const dayDiff = (a, b) => Math.round((new Date(b + "T12:00:00Z") - new Date(a + "T12:00:00Z")) / 864e5);
+
+async function renderWatches() {
+  const box = document.getElementById("watches");
+  const note = document.getElementById("histnote");
+  document.getElementById("watchform").hidden = state.mode !== "site";
+  if (state.mode !== "site") {
+    box.innerHTML = `<div class="empty">Prisudvikling bygger på historik, som opsamles dagligt på mobilversionen.<br><a class="src" href="${SITE_URL}#priser" target="_blank" rel="noopener">Åbn Hverdag på mmelkersen.github.io ↗</a></div>`;
+    return;
+  }
+  if (!state.hist) { box.innerHTML = `<div class="empty">Henter prishistorik…</div>`; await loadHistory(); }
+  if (!state.hist) { box.innerHTML = `<div class="empty">Kunne ikke hente prishistorik. Prøv igen senere.</div>`; return; }
+  if (!state.watches.length) { box.innerHTML = `<div class="empty">Du følger ingen varer. Skriv fx "hakket oksekød" ovenfor.</div>`; note.textContent = ""; return; }
+  box.innerHTML = state.watches.map(watchCard).join("");
+  const weeks = state.hist.start ? Math.max(0, Math.floor(dayDiff(state.hist.start, todayIso()) / 7)) : 0;
+  note.textContent = `Historik opsamlet siden ${state.hist.start ? dateDa(state.hist.start) : "i dag"}${weeks ? ` (${weeks} uger)` : ""}. Tidligere aviser findes ikke, så grafen bliver mere sigende uge for uge.`;
+}
+
+function watchCard(w) {
+  const pq = parseQuery(w.term);
+  const today = todayIso();
+  const ok = x => matches(x.hay, pq) && (!w.oeko || x.q.includes("oeko"));
+  let offers = state.hist.offers.filter(o => o.up != null && ok(o));
+  let fixed = state.hist.fixed.filter(f => f.h.length && ok(f));
+  // Brug den mest almindelige enhed (kg, l eller stk), så priserne kan sammenlignes.
+  const cnt = {};
+  for (const x of [...offers, ...fixed]) if (x.unit) cnt[x.unit] = (cnt[x.unit] || 0) + 1;
+  const unit = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0]?.[0];
+  offers = offers.filter(o => o.unit === unit);
+  // Fjern ekstreme enhedspriser (fx et køkkenredskab i en madsøgning): over 3 × medianen.
+  const ups = [...offers.map(o => o.up), ...fixed.flatMap(f => f.h.map(e => e[2]))].filter(v => v != null).sort((a, b) => a - b);
+  const med = ups[Math.floor(ups.length / 2)];
+  if (med) { offers = offers.filter(o => o.up <= med * 3); fixed = fixed.filter(f => (f.h[f.h.length - 1][2] ?? 0) <= med * 3); }
+  // Fast pris = priser uden kampagne.
+  fixed = fixed.map(f => ({ ...f, h: f.h.filter(e => e[2] != null && !e[3]) })).filter(f => f.unit === unit && f.h.length);
+  const curr = state.products.filter(p => p.offer && p.up != null && p.unit === unit && matches(p.hay, pq) && (!w.oeko || p.q.includes("oeko")) && (!p.till || p.till >= today) && (!med || p.up <= med * 3))
+    .sort((a, b) => a.up - b.up);
+  const fixedNow = fixed.map(f => ({ name: f.name, up: f.h[f.h.length - 1][2] })).filter(f => f.up != null).sort((a, b) => a.up - b.up);
+  const bestNow = curr[0];
+  const normal = fixedNow[0];
+  const lowest = offers.reduce((m, o) => (!m || o.up < m.up ? o : m), null);
+  const u = unitLabel(unit);
+  const title = w.term.split(/\s+/).filter(x => !x.startsWith("-")).join(" ").replace(/"/g, "");
+  const without = w.term.split(/\s+/).filter(x => x.startsWith("-") && x.length > 1).map(x => x.slice(1).replace(/"/g, ""));
+  const head = `<div class="wh"><div><div class="wt">${esc(title)}</div>
+      <div class="wsub">${without.length ? `Uden: ${esc(without.join(", "))} · ` : ""}${unit ? `Pris pr. ${esc(u)} · ` : ""}${offers.length} tilbud i historikken · ${fixed.length} faste varer</div></div>
+      <div class="chips"><button class="chip woeko" aria-pressed="${!!w.oeko}">Kun øko</button><button class="del wdel" aria-label="Stop med at følge ${esc(w.term)}">×</button></div></div>`;
+  if (!unit) return `<article class="watch" data-id="${esc(w.id)}">${head}<div class="muted small">Ingen varer matcher endnu. Prøv et bredere ord.</div></article>`;
+
+  // Vurdering
+  let cls = "none", label = "Intet tilbud nu", txt = lowest ? `Sidst på tilbud: ${kr2(lowest.up)} kr/${u} hos ${lowest.chain} (${dateDa(lowest.from)}).` : "";
+  if (bestNow) {
+    const pct = normal ? Math.round((1 - bestNow.up / normal.up) * 100) : null;
+    const weeks = state.hist.start ? dayDiff(state.hist.start, today) / 7 : 0;
+    const isLow = lowest && bestNow.up <= lowest.up * 1.02;
+    if (pct != null && pct >= 15 && isLow && weeks >= 4) { cls = "good"; label = "Køb til lager"; txt = `Laveste pris i ${Math.floor(weeks)} uger og ${pct}% under fast pris.`; }
+    else if (pct != null && pct >= 15) { cls = "good"; label = "Godt tilbud"; txt = `${pct}% under Remas faste pris.`; }
+    else { cls = "warn"; label = "Almindeligt tilbud"; txt = pct != null ? (pct > 0 ? `Kun ${pct}% under fast pris.` : `Ikke billigere end fast pris.`) : "Ingen fast pris at sammenligne med."; }
+  }
+  const nums = `<div class="wnums">
+    <div><div class="v">${bestNow ? kr2(bestNow.up) : "–"}</div><div class="l">Bedste tilbud nu</div></div>
+    <div><div class="v">${normal ? kr2(normal.up) : "–"}</div><div class="l">Billigste faste pris${normal ? ` · ${esc(normal.name)}` : ""}</div></div>
+    <div><div class="v">${lowest ? kr2(lowest.up) : "–"}</div><div class="l">Laveste set</div></div></div>`;
+  const list = curr.slice(0, 3).map(p => `<div class="r"><span class="dot" style="background:${CHAIN_BY_NAME[p.chain].color}"></span><span class="nm">${esc(p.name)}</span><span class="pp">${kr2(p.up)} kr/${esc(u)}</span>${p.url ? `<a class="src" href="${esc(p.url)}" target="_blank" rel="noopener">avis ↗</a>` : ""}</div>`).join("");
+  return `<article class="watch" data-id="${esc(w.id)}">${head}
+    <div class="wverdict"><span class="wv ${cls}">${label}</span><span class="small">${esc(txt)}</span></div>
+    ${nums}
+    <div class="chart">${watchChart(offers, fixed, today)}</div>
+    ${list ? `<div class="wlist">${list}</div>` : ""}
+  </article>`;
+}
+
+function watchChart(offers, fixed, today) {
+  // Én streg pr. kæde og tilbudsperiode: den billigste matchende vare.
+  const segs = new Map();
+  for (const o of offers) {
+    const k = o.chain + "|" + o.from + "|" + o.till;
+    if (!segs.has(k) || o.up < segs.get(k).up) segs.set(k, o);
+  }
+  const S = [...segs.values()];
+  const dates = [...S.map(o => o.from), ...fixed.map(f => f.h[0][0])].filter(Boolean).sort();
+  let start = dates[0] || today;
+  if (dayDiff(start, today) < 21) start = addDays(today, -21);
+  if (dayDiff(start, today) > 365) start = addDays(today, -365);
+  const maxTill = S.map(o => o.till).filter(t => t && t >= today).sort().pop();
+  const end = maxTill && dayDiff(today, maxTill) <= 30 ? maxTill : addDays(today, 7);
+  const span = Math.max(dayDiff(start, end), 1);
+  // Fast pris: billigste matchende Rema-vare pr. dag; første kendte pris antages også før opsamlingen startede.
+  const changes = [...new Set([start, ...fixed.flatMap(f => f.h.map(e => e[0]))])].filter(d => d >= start && d <= end).sort();
+  const normalAt = d => { let m = null; for (const f of fixed) { let v = f.h[0][2]; for (const e of f.h) if (e[0] <= d && e[2] != null) v = e[2]; if (v != null && (m == null || v < m)) m = v; } return m; };
+  const steps = changes.map(d => [d, normalAt(d)]).filter(x => x[1] != null);
+  const vals = [...S.map(o => o.up), ...steps.map(x => x[1])];
+  if (!vals.length) return `<div class="muted small">Ingen priser at vise endnu.</div>`;
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (hi - lo < 1) { lo -= 1; hi += 1; }
+  const pad = (hi - lo) * 0.12; lo = Math.max(0, lo - pad); hi = hi + pad;
+  const W = 640, H = 220, L = 58, R = 12, T = 14, B = 32;
+  const x = d => L + (W - L - R) * Math.max(0, Math.min(span, dayDiff(start, d))) / span;
+  const y = v => T + (H - T - B) * (hi - v) / (hi - lo);
+  const tickStep = [1, 2, 5, 10, 20, 25, 50, 100].find(s => (hi - lo) / s <= 5) || 200;
+  let grid = "";
+  for (let v = Math.ceil(lo / tickStep) * tickStep; v <= hi; v += tickStep) grid += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${kr(v)}</text>`;
+  // Ugenumre på mandage
+  let xl = "";
+  const every = Math.max(1, Math.ceil(span / 7 / 7));
+  let wi = 0;
+  for (let d = start; d <= end; d = addDays(d, 1)) {
+    if (new Date(d + "T12:00:00Z").getUTCDay() !== 1) continue;
+    if (wi++ % every) continue;
+    xl += `<text x="${x(d)}" y="${H - 8}" text-anchor="middle">uge ${isoWeek(new Date(d + "T12:00:00"))}</text>`;
+  }
+  let normal = "";
+  if (steps.length) {
+    let pts = "";
+    steps.forEach(([d, v], i) => { const nx = i + 1 < steps.length ? steps[i + 1][0] : end; pts += `${x(d)},${y(v)} ${x(nx)},${y(v)} `; });
+    normal = `<polyline points="${pts}" fill="none" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="5 4"/>`;
+  }
+  const segsSvg = S.filter(o => o.till >= start && o.from <= end).map(o => {
+    const c = CHAIN_BY_NAME[o.chain]?.color || "var(--accent)";
+    const x1 = x(o.from < start ? start : o.from), x2 = Math.max(x(o.till > end ? end : o.till), x1 + 4);
+    return `<line x1="${x1}" x2="${x2}" y1="${y(o.up)}" y2="${y(o.up)}" stroke="${c}" stroke-width="5" stroke-linecap="round"><title>${esc(o.chain)}: ${kr2(o.up)} kr, ${esc(o.name)} (${dateDa(o.from)} – ${dateDa(o.till)})</title></line>`;
+  }).join("");
+  const tx = x(today);
+  const chains = [...new Set(S.map(o => o.chain))];
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Tilbudspriser over tid mod fast pris">
+    ${grid}
+    <line x1="${tx}" x2="${tx}" y1="${T}" y2="${H - B}" stroke="var(--fg)" stroke-opacity=".35" stroke-dasharray="2 3"/>
+    <text x="${tx + 4}" y="${T + 10}" text-anchor="start" style="fill:var(--fg)">i dag</text>
+    ${normal}${segsSvg}${xl}
+  </svg>
+  <div class="legend">${chains.map(c => `<span><span class="dot" style="background:${CHAIN_BY_NAME[c]?.color}"></span>${esc(c)}</span>`).join("")}${steps.length ? `<span><span class="ln"></span>Remas faste pris</span>` : ""}</div>`;
+}
 
 /* ---------- Benzin ---------- */
 function renderFuel() {
@@ -678,7 +940,7 @@ function weekdayPattern(days) {
 function drawTrend(days) {
   const el = document.getElementById("trend");
   if (days.length < 2) { el.innerHTML = `<div class="muted small">For få dage til en graf.</div>`; return; }
-  const W = 640, H = 220, L = 44, R = 14, T = 12, B = 28;
+  const W = 640, H = 240, L = 60, R = 14, T = 12, B = 32;
   const vals = days.map(d => d.avg);
   let lo = Math.floor((Math.min(...vals) - 0.05) * 10) / 10, hi = Math.ceil((Math.max(...vals) + 0.05) * 10) / 10;
   const x = i => L + (W - L - R) * i / (days.length - 1);
@@ -748,7 +1010,9 @@ function showData(offerDocs, fixedDocs, fuelDays) {
 
 // Selvstændig hjemmeside (GitHub Pages): data fra filer, seddel gemt på enheden.
 async function startStandalone() {
+  state.mode = "site";
   state.list = localList.load(); renderList();
+  if (!document.getElementById("view-priser").hidden) renderWatches();
   if (navigator.share) {
     document.getElementById("share").hidden = false;
     document.getElementById("copytip").textContent = "Tryk Del og vælg Noter. Eller kopiér og sæt ind i en ny note.";
@@ -766,6 +1030,7 @@ async function startStandalone() {
 
 (async () => {
   if (!window.claude) return startStandalone();
+  state.mode = "claude";
   const db = await window.claude.use?.("db");
   if (!db) {
     state.list = localList.load(); renderList();

@@ -73,12 +73,14 @@ async function fetchOffers(chain) {
       up ? up[1] : null,
       o.run_from?.slice(0, 10) ?? null,
       o.run_till?.slice(0, 10) ?? null,
+      o.id,
+      o.catalog_id ?? null,
     ]);
   }
   return {
     chain: chain.name,
     updated: new Date().toISOString(),
-    fields: ["navn", "beskrivelse", "pris", "foerpris", "enhedspris", "enhed", "fra", "til"],
+    fields: ["navn", "beskrivelse", "pris", "foerpris", "enhedspris", "enhed", "fra", "til", "tilbudId", "avisId"],
     items,
   };
 }
@@ -106,6 +108,7 @@ async function fetchRemaAssortment() {
         pr.compare_unit ?? null,
         pr.is_campaign || pr.is_advertised ? 1 : 0,
         remaLabels(p.labels),
+        p.id,
       ]);
     }
     if (page >= j.meta.pagination.last_page) break;
@@ -130,7 +133,7 @@ async function fetchRemaAssortment() {
     part: i + 1,
     parts: chunks.length,
     updated: new Date().toISOString(),
-    fields: ["navn", "beskrivelse", "pris", "enhedspris", "enhed", "kampagne", "maerker"],
+    fields: ["navn", "beskrivelse", "pris", "enhedspris", "enhed", "kampagne", "maerker", "id"],
     items: c,
   }));
 }
@@ -219,6 +222,53 @@ if (process.argv.includes("--site")) {
     days = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
     await writeFile(new URL("fuel.json", DATA), JSON.stringify({ days }));
   }
+  // Prishistorik til grafer: alle tilbud (én række pr. tilbud) og Remas faste priser (kun ændringer).
+  const HIST = new URL("history/", DATA);
+  await mkdir(HIST, { recursive: true });
+  const readJson = async (u, fallback) => { try { return JSON.parse(await readFile(u, "utf8")); } catch { return fallback; } };
+  const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Copenhagen" });
+  if (site.offers.length) {
+    const file = new URL(`tilbud-${today.slice(0, 4)}.json`, HIST);
+    const h = await readJson(file, { chains: CHAINS.map((c) => c.name), names: [], recs: [] });
+    const nameIdx = new Map(h.names.map((n, i) => [n, i]));
+    // Samme tilbud = samme kæde, varenavn, pris og startdato (beskrivelsen varierer en smule mellem kørsler).
+    const keyOf = (ci, label, price, from) => `${ci}|${label.split(" | ")[0]}|${price}|${from}`;
+    const seen = new Set(h.recs.map((r) => keyOf(r[0], h.names[r[1]], r[2], r[5])));
+    let added = 0;
+    for (const doc of site.offers) {
+      const ci = h.chains.indexOf(doc.chain);
+      for (const [name, desc, price, , up, unit, from, till] of doc.items) {
+        // Navn + start af beskrivelsen, så fx "400 g" kommer med i søgningen.
+        const label = (name + " | " + desc).slice(0, 140);
+        const key = keyOf(ci, label, price, from);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        if (!nameIdx.has(label)) { nameIdx.set(label, h.names.length); h.names.push(label); }
+        const ni = nameIdx.get(label);
+        h.recs.push([ci, ni, price, up, unit, from, till]);
+        added++;
+      }
+    }
+    await writeFile(file, JSON.stringify(h));
+    summary.historyAdded = added;
+  }
+  if (site.sortiment.length) {
+    const file = new URL("rema-faste.json", HIST);
+    const h = await readJson(file, { start: today, items: {} });
+    let changed = 0;
+    for (const part of site.sortiment) {
+      for (const [name, desc, price, up, unit, camp, labels, id] of part.items) {
+        const it = (h.items[id] ||= { n: name, d: desc, u: (unit || "").toLowerCase(), l: labels, h: [] });
+        Object.assign(it, { n: name, d: desc, l: labels });
+        const last = it.h[it.h.length - 1];
+        // [dato, pris, enhedspris, kampagne]; kampagnepriser tæller ikke som fast pris på siden.
+        if (!last || last[1] !== price || last[2] !== up || (last[3] || 0) !== camp) { it.h.push([today, price, up, camp]); changed++; }
+      }
+    }
+    await writeFile(file, JSON.stringify(h));
+    summary.remaChanged = changed;
+  }
+
   const page = await readFile(new URL("./hverdag.html", import.meta.url), "utf8");
   const head = `<!doctype html><html lang="da"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
