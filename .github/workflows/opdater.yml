@@ -30,6 +30,10 @@ jobs:
           node-version: 22
       - name: Hent data
         run: node hent-data.mjs --site
+        env:
+          UNOX_CLIENT_ID: ${{ secrets.UNOX_CLIENT_ID }}
+          UNOX_CLIENT_SECRET: ${{ secrets.UNOX_CLIENT_SECRET }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
       - name: Gem data i repoet
         run: |
           git config user.name "hverdag-bot"

@@ -2,6 +2,7 @@
 // og dagens benzinpriser, og skriver dem som JSON-dokumenter i ./out klar til artefaktens database.
 // Kør: node hent-data.mjs
 import { mkdir, writeFile, readFile, rm } from "node:fs/promises";
+import { hasUnoxCredentials, fetchUnox, updateUnox, sendNotification } from "./unox.mjs";
 
 const OUT = new URL("./out/", import.meta.url);
 const UA = { "User-Agent": "Mozilla/5.0 (Hverdag indkoebsliste)" };
@@ -179,11 +180,11 @@ await mkdir(new URL("sortiment/", OUT), { recursive: true });
 await mkdir(new URL("fuel/", OUT), { recursive: true });
 
 const summary = { offers: {}, sortiment: 0, fuel: [], advice: null };
-const only = process.argv.find((a) => a === "fuel" || a === "offers"); // valgfrit
+const only = process.argv.find((a) => a === "fuel" || a === "offers" || a === "unox"); // valgfrit
 
 const site = { offers: [], sortiment: [], fuel: null };
 
-if (only !== "fuel") {
+if (!only || only === "offers") {
   for (const c of CHAINS) {
     const doc = await fetchOffers(c);
     await writeFile(new URL(`offers/${c.key}.json`, OUT), JSON.stringify(doc));
@@ -195,7 +196,7 @@ if (only !== "fuel") {
   summary.sortiment = parts.length;
   site.sortiment = parts;
 }
-if (only !== "offers") {
+if (!only || only === "fuel") {
   const fuel = await fetchFuel();
   summary.advice = fuel.advice;
   site.fuel = fuel;
@@ -268,6 +269,17 @@ if (process.argv.includes("--site")) {
     await writeFile(file, JSON.stringify(h));
     summary.remaChanged = changed;
   }
+
+  // Uno-X: din station, timevis (kræver nøgle).
+  if ((!only || only === "unox") && hasUnoxCredentials()) {
+    try {
+      const res = await updateUnox(DATA, await fetchUnox());
+      summary.unox = { station: res.doc.station.name, price: res.doc.changes.at(-1)?.[1], changed: res.changed };
+      if (res.notify) summary.unox.notified = await sendNotification(res.notify);
+    } catch (e) {
+      summary.unox = { error: e.message };
+    }
+  } else if (only === "unox") summary.unox = { error: "Mangler UNOX_CLIENT_ID og UNOX_CLIENT_SECRET" };
 
   const page = await readFile(new URL("./hverdag.html", import.meta.url), "utf8");
   const head = `<!doctype html><html lang="da"><head><meta charset="utf-8">

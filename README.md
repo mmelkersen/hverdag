@@ -13,6 +13,7 @@ Ugens tilbud fra Netto, Føtex, 365discount og Rema 1000, en indkøbsseddel sort
   - Fast sortiment med mærker (Ø-mærket, Nøglehul …): Rema 1000's produkt-API.
   - Benzin: https://www.detkoster.dk/benzin/data.json (CC BY 4.0).
 - `site/`: det, der udgives på GitHub Pages: `index.html` bygges fra `hverdag.html`, plus data, manifest, offline-cache og ikoner.
+- `unox.mjs` + `.github/workflows/benzin.yml`: henter hver time prisen på din Uno-X-station (Birkerød Kongevej 158) fra Uno-X' officielle API. Prisændringer gemmes i `site/data/unox.json`. Kræver GitHub-secrets `UNOX_CLIENT_ID` og `UNOX_CLIENT_SECRET`. `NTFY_TOPIC` (valgfri) sender "Tank nu"-beskeder via ntfy-appen. Stationen ændres i toppen af `unox.mjs`.
 - `.github/workflows/opdater.yml`: kører hver morgen kl. 07:30 (sommertid). Den henter data, gemmer benzinhistorikken i repoet og udgiver siden.
 
 ## Kør lokalt

@@ -181,6 +181,16 @@ a.src:hover { text-decoration: underline; }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); }
 .legend span { display: inline-flex; align-items: center; gap: 5px; }
 .legend .ln { width: 16px; height: 0; border-top: 2px dashed var(--muted); display: inline-block; }
+.wv.bad { background: var(--bad-bg); color: var(--bad); }
+.station { gap: 12px; }
+.sthead { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.sthead .sname { font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1.1; }
+.near { display: grid; gap: 4px; font-size: 14px; }
+.near .r { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: baseline; }
+.near .r .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.near .r .pp { font-variant-numeric: tabular-nums; font-weight: 600; }
+.near .r .df { font-variant-numeric: tabular-nums; font-size: 12px; min-width: 56px; text-align: right; }
+.df.lo { color: var(--good); } .df.hi { color: var(--bad); }
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 99px; font-weight: 600; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
 @media (max-width: 480px) {
   .stats { grid-template-columns: 1fr 1fr; }
@@ -274,6 +284,8 @@ a.src:hover { text-decoration: underline; }
 
   <!-- BENZIN -->
   <section class="view" id="view-benzin" hidden>
+    <div class="panel station" id="station" hidden></div>
+    <h3 style="margin-top:4px">Hele landet</h3>
     <div class="verdict" id="verdict"><div class="k">Benzin 95</div><div class="h">Henter priser…</div></div>
     <div class="stats" id="fuelstats"></div>
     <div class="panel">
@@ -884,7 +896,10 @@ function renderFuel() {
   const mean = a => a.reduce((t, x) => t + x, 0) / a.length;
   const avg30 = mean(last(30).map(d => d.avg));
   const min7 = Math.min(...last(7).map(d => d.avg));
-  const cheapestChain = today.chains ? Object.entries(today.chains).sort((a, b) => a[1] - b[1])[0] : null;
+  const chainPrices = { ...(today.chains || {}) };
+  const ud = state.unox?.daily?.find(x => x[0] === today.date);
+  if (ud) chainPrices["Uno-X"] = ud[1];
+  const cheapestChain = Object.keys(chainPrices).length ? Object.entries(chainPrices).sort((a, b) => a[1] - b[1])[0] : null;
   const wd = weekdayPattern(days);
 
   // Anbefaling
@@ -921,8 +936,8 @@ function renderFuel() {
 
   // Kæder
   const bars = document.getElementById("chainbars");
-  if (today.chains && Object.keys(today.chains).length) {
-    const entries = Object.entries(today.chains).sort((a, b) => a[1] - b[1]);
+  if (Object.keys(chainPrices).length) {
+    const entries = Object.entries(chainPrices).sort((a, b) => a[1] - b[1]);
     const lo = entries[0][1], hi = entries[entries.length - 1][1];
     const span = Math.max(hi - lo, 0.05);
     bars.innerHTML = entries.map(([n, v]) => `<div class="bar${v === lo ? " min" : ""}"><span>${esc(n)}</span><span class="track"><span class="fill" style="display:block;width:${20 + 80 * (v - lo) / span}%"></span></span><span class="v">${kr2(v)}</span></div>`).join("");
@@ -930,10 +945,107 @@ function renderFuel() {
 
   drawTrend(last(60));
   drawWeekday(wd, days.length);
-  document.getElementById("fuelsource").textContent = `Landsdækkende pumpepriser fra detkoster.dk (CC BY 4.0), hentet hver morgen. Priser på den enkelte tank kan afvige. Seneste: ${dateDa(today.date)}.`;
+  renderStation(today);
+  document.getElementById("fuelsource").textContent = `Landsdækkende pumpepriser fra detkoster.dk (CC BY 4.0), hentet hver morgen. Uno-X fra Uno-X' eget API. Priser på den enkelte tank kan afvige. Seneste: ${dateDa(today.date)}.`;
 }
 
 // Afvigelse fra et centreret 7-dages gennemsnit, midlet pr. ugedag.
+/* ---------- Din station (Uno-X, timevise data) ---------- */
+function renderStation(today) {
+  const el = document.getElementById("station");
+  if (state.mode !== "site") { el.hidden = true; return; }
+  el.hidden = false;
+  const u = state.unox;
+  if (!u || !u.changes?.length) {
+    el.innerHTML = `<h3>Din station</h3><div class="sname" style="font-family:var(--font-display);font-weight:700;font-size:24px">Uno-X Birkerød Kongevej</div>
+      <div class="small muted">Venter på data fra Uno-X. Når adgangen til Uno-X' pris-API er sat op, ser du her prisen på din station time for time, det billigste tidspunkt på døgnet og ugen, og Uno-X-stationerne i nærheden.</div>`;
+    return;
+  }
+  const ch = u.changes.map(([t, p]) => [Date.parse(t), p]).sort((a, b) => a[0] - b[0]);
+  const at = t => { let p = null; for (const [ts, v] of ch) { if (ts <= t) p = v; else break; } return p; };
+  const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const now = Date.now();
+  const cur = ch[ch.length - 1][1], curT = ch[ch.length - 1][0];
+  const sample = ms => { const v = []; for (let t = now - ms; t <= now; t += 3600e3) { const p = at(t); if (p != null) v.push(p); } return v; };
+  const s7 = sample(7 * 864e5), s14 = sample(14 * 864e5);
+  const mean7 = s7.length ? mean(s7) : null, min14 = s14.length ? Math.min(...s14) : null;
+
+  // Døgnprofil: pris kl. hh:30 hver hele dag de seneste 28 dage, som afvigelse fra dagens gennemsnit.
+  const prof = Array(24).fill(0), cnt = Array(24).fill(0), dailyMeans = [];
+  const d = new Date(Math.max(ch[0][0], now - 28 * 864e5)); d.setHours(0, 0, 0, 0);
+  for (; d.getTime() + 864e5 <= now; d.setDate(d.getDate() + 1)) {
+    const vals = [];
+    for (let h = 0; h < 24; h++) { const t = new Date(d); t.setHours(h, 30, 0, 0); const p = at(t.getTime()); if (p == null) break; vals.push(p); }
+    if (vals.length !== 24) continue;
+    const m = mean(vals);
+    vals.forEach((v, h) => { prof[h] += v - m; cnt[h]++; });
+    dailyMeans.push({ date: d.toLocaleDateString("sv-SE"), avg: m });
+  }
+  const profile = dailyMeans.length >= 3 ? prof.map((v, h) => v / cnt[h]) : null;
+  const wdStation = weekdayPattern(dailyMeans);
+
+  // Vurdering
+  const hNow = new Date().getHours();
+  let cls = "none", label = "Normal pris", txt = "Ingen grund til at vente. Tank når det passer dig.";
+  let waitH = null;
+  if (profile) {
+    for (let k = 1; k <= 12; k++) { const h = (hNow + k) % 24; if (profile[h] <= profile[hNow] - 0.10 && (waitH == null || profile[h] < profile[waitH])) waitH = h; }
+  }
+  if (min14 != null && (cur <= min14 + 0.005 || (mean7 != null && cur <= mean7 - 0.15))) {
+    cls = "good"; label = "Tank nu";
+    txt = cur <= min14 + 0.005 ? "Laveste pris på stationen i 14 dage." : `${Math.round((mean7 - cur) * 100)} øre under ugens gennemsnit.`;
+  } else if (waitH != null) {
+    cls = "warn"; label = `Vent til ca. kl. ${String(waitH).padStart(2, "0")}`;
+    txt = `Prisen plejer at være ca. ${Math.round((profile[hNow] - profile[waitH]) * 100)} øre lavere kl. ${String(waitH).padStart(2, "0")} end nu.`;
+  } else if (mean7 != null && cur >= mean7 + 0.15) {
+    cls = "bad"; label = "Dyrt lige nu"; txt = `${Math.round((cur - mean7) * 100)} øre over ugens gennemsnit.`;
+  }
+  const days = Math.max(0, (now - ch[0][0]) / 864e5);
+  const best = profile ? profile.indexOf(Math.min(...profile)) : null;
+  const near = (u.nearby || []).map(n => {
+    const df = Math.round((n.price - cur) * 100);
+    return `<div class="r"><span class="nm">Uno-X ${esc(n.name)} · ${n.km.toLocaleString("da-DK", { maximumFractionDigits: 1 })} km</span><span class="pp">${kr2(n.price)}</span><span class="df ${df < 0 ? "lo" : df > 0 ? "hi" : ""}">${df === 0 ? "samme" : (df > 0 ? "+" : "−") + Math.abs(df) + " øre"}</span></div>`;
+  }).join("");
+  const time = new Date(curT).toLocaleString("da-DK", { weekday: "short", hour: "2-digit", minute: "2-digit" });
+  el.innerHTML = `<div class="sthead"><div><h3>Din station</h3><div class="sname">Uno-X ${esc(u.station.name)}</div><div class="small muted">${esc(u.station.address)}</div></div>
+      <div class="tag">${kr2(cur)}<small>siden ${esc(time)}</small></div></div>
+    <div class="wverdict"><span class="wv ${cls}">${esc(label)}</span><span class="small">${esc(txt)}</span></div>
+    <div class="wnums">
+      <div><div class="v">${mean7 != null ? kr2(mean7) : "–"}</div><div class="l">Snit 7 dage</div></div>
+      <div><div class="v">${min14 != null ? kr2(min14) : "–"}</div><div class="l">Laveste 14 dage</div></div>
+      <div><div class="v">${today?.avg ? kr2(today.avg) : "–"}</div><div class="l">Landsgennemsnit i dag</div></div></div>
+    <h3>Pris over døgnet</h3>
+    ${profile ? `<div class="chart">${devBars(profile.map(v => v * 100), Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0")), 3, hNow)}</div>
+      <div class="foot">Øre over/under dagens snit, baseret på ${dailyMeans.length} hele døgn. Typisk billigst omkring kl. ${String(best).padStart(2, "0")}.</div>`
+      : `<div class="foot">Klar når der er samlet 3 hele døgn (${Math.floor(days)} indtil nu).</div>`}
+    <h3>Ugedage på stationen</h3>
+    ${wdStation ? `<div class="chart">${devBars([1, 2, 3, 4, 5, 6, 0].map(i => wdStation[i] == null ? null : wdStation[i] * 100), ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"], 1, null)}</div>`
+      : `<div class="foot">Klar når der er samlet 14 dage (${dailyMeans.length} indtil nu).</div>`}
+    ${near ? `<h3>Uno-X i nærheden (forskel til din station)</h3><div class="near">${near}</div>` : ""}
+    <div class="foot">Kilde: Uno-X' officielle pris-API, tjekket hver time. Senest ændret ${esc(new Date(u.checked).toLocaleString("da-DK", { hour: "2-digit", minute: "2-digit" }))}.</div>`;
+}
+
+// Søjler for afvigelser i øre; markerer laveste søjle og evt. "nu".
+function devBars(vals, labels, every, nowIdx) {
+  const W = 640, H = 190, T = 26, B = 30, L = 6, R = 6;
+  const ok = vals.filter(v => v != null);
+  const m = Math.max(3, ...ok.map(Math.abs));
+  const mid = T + (H - T - B) / 2, half = (H - T - B) / 2, bw = (W - L - R) / vals.length;
+  const minV = Math.min(...ok);
+  const minI = vals.indexOf(minV);
+  const bars = vals.map((v, i) => {
+    const cx = L + bw * i + bw / 2;
+    const lab = i % every === 0 ? `<text x="${cx}" y="${H - 8}" text-anchor="middle">${labels[i]}</text>` : "";
+    const nowMark = i === nowIdx ? `<rect x="${cx - bw / 2}" y="${T - 4}" width="${bw}" height="${H - T - B + 8}" fill="var(--fg)" fill-opacity=".06"/>` : "";
+    if (v == null) return nowMark + lab;
+    const h = Math.abs(v) / m * half, yy = v < 0 ? mid : mid - h;
+    const fill = v === minV ? "var(--good)" : v > 0 ? "var(--bad)" : "var(--accent)";
+    const val = vals.length <= 7 || i === minI ? `<text x="${cx}" y="${v < 0 ? Math.min(mid + h + 15, H - B + 4) : Math.max(mid - h - 5, 14)}" text-anchor="middle" style="fill:var(--fg);font-weight:600">${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(Math.round(v))}</text>` : "";
+    return `${nowMark}<rect x="${cx - bw * 0.32}" y="${yy}" width="${bw * 0.64}" height="${Math.max(h, 1)}" rx="2" fill="${fill}" fill-opacity="${v === minV ? 1 : .7}"/>${val}${lab}`;
+  }).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Afvigelse i øre"><line x1="${L}" x2="${W - R}" y1="${mid}" y2="${mid}" stroke="var(--line)"/>${bars}</svg>`;
+}
+
 function weekdayPattern(days) {
   if (days.length < 14) return null;
   const sums = Array(7).fill(0), cnt = Array(7).fill(0);
@@ -1004,7 +1116,8 @@ function drawWeekday(wd, n) {
 /* ---------- Opstart ---------- */
 renderList();
 
-function showData(offerDocs, fixedDocs, fuelDays) {
+function showData(offerDocs, fixedDocs, fuelDays, unox) {
+  state.unox = unox || null;
   state.products = buildIndex(offerDocs, fixedDocs);
   state.fuel = fuelDays;
   const upd = offerDocs.map(d => d.updated).filter(Boolean).sort().pop();
@@ -1030,8 +1143,8 @@ async function startStandalone() {
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
   try {
     const get = f => fetch("data/" + f, { cache: "no-cache" }).then(r => { if (!r.ok) throw new Error(f); return r.json(); });
-    const [offers, fixed, fuel] = await Promise.all([get("offers.json"), get("sortiment.json").catch(() => ({ docs: [] })), get("fuel.json").catch(() => ({ days: [] }))]);
-    showData(offers.docs || [], fixed.docs || [], fuel.days || []);
+    const [offers, fixed, fuel, unox] = await Promise.all([get("offers.json"), get("sortiment.json").catch(() => ({ docs: [] })), get("fuel.json").catch(() => ({ days: [] })), get("unox.json").catch(() => null)]);
+    showData(offers.docs || [], fixed.docs || [], fuel.days || [], unox);
   } catch {
     document.getElementById("status").textContent = "Kunne ikke hente data. Tjek din forbindelse og genindlæs siden.";
     renderFuel();
