@@ -12,6 +12,7 @@ const CHAINS = [
   { key: "foetex", name: "Føtex", dealer: "bdf5A" },
   { key: "365", name: "365discount", dealer: "DWZE1w" },
   { key: "rema", name: "Rema 1000", dealer: "11deC" },
+  { key: "bilka", name: "Bilka", dealer: "93f13" },
 ];
 
 async function getJson(url) {
@@ -47,12 +48,15 @@ function unitPrice(o) {
   return null;
 }
 
+// Rene nonfood-kataloger (legetøj, elektronik, bolig) springes over; siden handler om dagligvarer.
+const NONFOOD_CATALOG = /legetøj|nonfood|prosonic/i;
+
 async function fetchOffers(chain) {
   // Hent avis for avis: Tjek afviser offset over ~990 pr. forespørgsel, og en kæde kan have flere aviser
   // (fx ugens, næste uges og et legetøjskatalog) med over 1.000 tilbud tilsammen.
   const now = Date.now();
   const catalogs = (await getJson(`https://squid-api.tjek.com/v2/catalogs?dealer_ids=${chain.dealer}&limit=100`))
-    .filter((c) => c.offer_count > 0 && new Date(c.run_till).getTime() >= now);
+    .filter((c) => c.offer_count > 0 && new Date(c.run_till).getTime() >= now && !NONFOOD_CATALOG.test(c.label || ""));
   const all = [];
   for (const cat of catalogs) {
     for (let offset = 0; offset < 900; offset += 100) {
@@ -288,6 +292,8 @@ if (process.argv.includes("--site")) {
     const seen = new Set(h.recs.map((r) => keyOf(r[0], h.names[r[1]], r[2], r[5])));
     let added = 0;
     for (const doc of site.offers) {
+      // Nye kæder (fx Bilka) tilføjes til historikkens kædeliste.
+      if (!h.chains.includes(doc.chain)) h.chains.push(doc.chain);
       const ci = h.chains.indexOf(doc.chain);
       for (const [name, desc, price, , up, unit, from, till] of doc.items) {
         // Navn + start af beskrivelsen, så fx "400 g" kommer med i søgningen.

@@ -1,6 +1,6 @@
 # Hverdag
 
-Ugens tilbud fra Netto, Føtex, 365discount og Rema 1000, en indkøbsseddel sorteret efter butik og afdeling, og daglig overvågning af prisen på blyfri 95.
+Ugens tilbud fra Netto, Føtex, 365discount, Rema 1000 og Bilka, en indkøbsseddel sorteret efter butik og afdeling, og daglig overvågning af prisen på blyfri 95.
 
 - **Hjemmeside (telefon):** https://mmelkersen.github.io/hverdag/. Åbn i Safari, tryk Del og vælg *Føj til hjemmeskærm*.
 - **Claude-version:** https://claude.ai/artifact/SWPvxQfLhqLdWrDHeGRWNg

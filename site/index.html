@@ -35,6 +35,7 @@
   --c-foetex: #1c3f8f;
   --c-365: #2d2d2d;
   --c-rema: #1f5fbf;
+  --c-bilka: #0097d7;
   --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
   --font-body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
   --r: 10px;
@@ -44,7 +45,7 @@
     --bg: #111614; --surface: #1a211e; --surface-2: #242d29; --fg: #e7ece9; --muted: #95a39d;
     --line: #2f3a35; --accent: #4cc39a; --accent-fg: #0b1511; --tag: #ffd84a; --tag-fg: #1a1a12;
     --good: #5fd68a; --warn: #f0b052; --bad: #ff8a7a; --good-bg: #173524; --warn-bg: #3a2c13; --bad-bg: #3d1d1a;
-    --c-netto: #f2c500; --c-foetex: #6f93e8; --c-365: #bdbdbd; --c-rema: #5c9bff;
+    --c-netto: #f2c500; --c-foetex: #6f93e8; --c-365: #bdbdbd; --c-rema: #5c9bff; --c-bilka: #3ec1f3;
     color-scheme: dark;
   }
 }
@@ -52,7 +53,7 @@
   --bg: #111614; --surface: #1a211e; --surface-2: #242d29; --fg: #e7ece9; --muted: #95a39d;
   --line: #2f3a35; --accent: #4cc39a; --accent-fg: #0b1511; --tag: #ffd84a; --tag-fg: #1a1a12;
   --good: #5fd68a; --warn: #f0b052; --bad: #ff8a7a; --good-bg: #173524; --warn-bg: #3a2c13; --bad-bg: #3d1d1a;
-  --c-netto: #f2c500; --c-foetex: #6f93e8; --c-365: #bdbdbd; --c-rema: #5c9bff;
+  --c-netto: #f2c500; --c-foetex: #6f93e8; --c-365: #bdbdbd; --c-rema: #5c9bff; --c-bilka: #3ec1f3;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -314,10 +315,11 @@ const CHAINS = [
   { key: "foetex", name: "Føtex", color: "var(--c-foetex)" },
   { key: "365", name: "365discount", color: "var(--c-365)" },
   { key: "rema", name: "Rema 1000", color: "var(--c-rema)" },
+  { key: "bilka", name: "Bilka", color: "var(--c-bilka)" },
 ];
 const CHAIN_BY_NAME = Object.fromEntries(CHAINS.map(c => [c.name, c]));
 // Butikkernes adresser på eTilbudsavis, hvor tilbuddet kan ses i selve avisen.
-const SLUG = { netto: "Netto", foetex: "fotex", "365": "365discount", rema: "REMA-1000" };
+const SLUG = { netto: "Netto", foetex: "fotex", "365": "365discount", rema: "REMA-1000", bilka: "Bilka" };
 const SITE_URL = "https://mmelkersen.github.io/hverdag/";
 const STORE_ORDER = [...CHAINS.map(c => c.name), "Valgfri butik"];
 
@@ -432,8 +434,9 @@ const state = {
   fuel: [],
 };
 try { const s = JSON.parse(localStorage.getItem("hverdag-prefs") || "{}");
-  if (s.chains) state.chains = new Set(s.chains); if (s.sort) state.sort = s.sort; if (s.inclFixed != null) state.inclFixed = s.inclFixed; if (s.quality) state.quality = new Set(s.quality); } catch {}
-function savePrefs() { try { localStorage.setItem("hverdag-prefs", JSON.stringify({ chains: [...state.chains], sort: state.sort, inclFixed: state.inclFixed, quality: [...state.quality] })); } catch {} }
+  if (s.hidden) state.chains = new Set(CHAINS.map(c => c.key).filter(k => !s.hidden.includes(k)));
+  else if (s.chains) state.chains = new Set([...s.chains, "bilka"]); if (s.sort) state.sort = s.sort; if (s.inclFixed != null) state.inclFixed = s.inclFixed; if (s.quality) state.quality = new Set(s.quality); } catch {}
+function savePrefs() { try { localStorage.setItem("hverdag-prefs", JSON.stringify({ hidden: CHAINS.map(c => c.key).filter(k => !state.chains.has(k)), sort: state.sort, inclFixed: state.inclFixed, quality: [...state.quality] })); } catch {} }
 
 /* ---------- Faneblade ---------- */
 function showView(v) {
