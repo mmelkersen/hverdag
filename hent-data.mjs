@@ -48,15 +48,19 @@ function unitPrice(o) {
 }
 
 async function fetchOffers(chain) {
-  const all = [];
-  for (let offset = 0; offset < 2000; offset += 100) {
-    const page = await getJson(
-      `https://squid-api.tjek.com/v2/offers?dealer_ids=${chain.dealer}&limit=100&offset=${offset}`
-    );
-    all.push(...page);
-    if (page.length < 100) break;
-  }
+  // Hent avis for avis: Tjek afviser offset over ~990 pr. forespørgsel, og en kæde kan have flere aviser
+  // (fx ugens, næste uges og et legetøjskatalog) med over 1.000 tilbud tilsammen.
   const now = Date.now();
+  const catalogs = (await getJson(`https://squid-api.tjek.com/v2/catalogs?dealer_ids=${chain.dealer}&limit=100`))
+    .filter((c) => c.offer_count > 0 && new Date(c.run_till).getTime() >= now);
+  const all = [];
+  for (const cat of catalogs) {
+    for (let offset = 0; offset < 900; offset += 100) {
+      const page = await getJson(`https://squid-api.tjek.com/v2/offers?catalog_id=${cat.id}&limit=100&offset=${offset}`);
+      all.push(...page);
+      if (page.length < 100) break;
+    }
+  }
   const seen = new Set();
   const items = [];
   for (const o of all) {
@@ -219,8 +223,21 @@ const only = process.argv.find((a) => a === "fuel" || a === "offers" || a === "u
 const site = { offers: [], sortiment: [], fuel: null };
 
 if (!only || only === "offers") {
+  // Fejler én kæde, genbruges dens tilbud fra sidste kørsel, så resten stadig opdateres.
+  let previous = [];
+  try { previous = JSON.parse(await readFile(new URL("./site/data/offers.json", import.meta.url), "utf8")).docs || []; } catch {}
   for (const c of CHAINS) {
-    const doc = await fetchOffers(c);
+    let doc;
+    try {
+      doc = await fetchOffers(c);
+    } catch (e) {
+      doc = previous.find((d) => d._id === c.key);
+      console.error(`Tilbud fra ${c.name} fejlede (${e.message})${doc ? "; bruger sidste kørsels tilbud" : ""}`);
+      summary.errors = [...(summary.errors || []), `${c.name}: ${e.message}`];
+      if (!doc) continue;
+      const { _id, ...rest } = doc;
+      doc = rest;
+    }
     await writeFile(new URL(`offers/${c.key}.json`, OUT), JSON.stringify(doc));
     summary.offers[c.key] = doc.items.length;
     site.offers.push({ ...doc, _id: c.key });
